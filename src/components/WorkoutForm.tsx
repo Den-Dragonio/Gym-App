@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
-  Plus, Trash2, CheckCircle2, ChevronDown, Link, Unlink, Clock
+  Plus, Trash2, CheckCircle2, ChevronDown, Link, Unlink, Clock, MessageSquare
 } from 'lucide-react';
 import './WorkoutForm.css';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
-import { getUserDocument } from '../firebase/db';
+import { getUserDocument, updateWorkout } from '../firebase/db';
 
 const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps', 'Back & Biceps', 'Leg Day', 'Dancing', 'Boxing', 'Basketball', 'Football', 'Tennis', 'Swimming', 'Yoga', 'Pilates'];
 const MOCK_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
-type RirColor = 'white' | 'red' | 'green' | 'cheating';
+// Expand RirColor to include new states
+type RirColor = 'white' | 'approx' | 'green' | 'red0' | 'redNeg' | 'cheating' | 'red';
 
 interface SetDetails {
   id: string;
@@ -27,19 +28,27 @@ interface ExerciseRow {
   name: string;
   isCircuit: boolean; 
   sets: SetDetails[];
+  notes?: string; // New: per-exercise notes
 }
 
-export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date }) => {
+interface WorkoutFormProps {
+  onClose: () => void;
+  date: Date;
+  initialData?: any; // New: for editing
+  onSuccess?: (workout: any) => void; // New: callback after save
+}
+
+export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFormProps) => {
   const { t } = useTranslation();
   const { currentUser } = useAuth();
   
-  const [workoutName, setWorkoutName] = useState('');
-  const [bodyWeight, setBodyWeight] = useState('');
+  const [workoutName, setWorkoutName] = useState(initialData?.type || '');
+  const [bodyWeight, setBodyWeight] = useState(initialData?.bodyWeight || '');
   const [showWorkoutDropdown, setShowWorkoutDropdown] = useState(false);
-  const [durationStr, setDurationStr] = useState('60'); // Minutes spent in gym
-  const [notes, setNotes] = useState('');
+  const [durationStr, setDurationStr] = useState(initialData?.duration || '60'); 
+  const [notes, setNotes] = useState(initialData?.notes || '');
   
-  const [selectedSupplements, setSelectedSupplements] = useState<string[]>([]);
+  const [selectedSupplements, setSelectedSupplements] = useState<string[]>(initialData?.supplements || []);
   const [suppDropdownOpen, setSuppDropdownOpen] = useState(false);
 
   const [focusedExerciseRow, setFocusedExerciseRow] = useState<string | null>(null);
@@ -55,19 +64,22 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
       if (profile) {
         if (profile.workoutNames) setUserWorkoutNames(profile.workoutNames);
         if (profile.supplements) setUserSupplements(profile.supplements);
-        if (profile.weight && !bodyWeight) setBodyWeight(profile.weight);
+        if (profile.weight && !bodyWeight && !initialData) setBodyWeight(profile.weight);
       }
     };
     fetchUserLists();
-  }, [currentUser]);
+  }, [currentUser, initialData]);
 
   const [rows, setRows] = useState<ExerciseRow[]>(() => {
+    if (initialData?.exercises) return initialData.exercises;
+
     const initialRows: ExerciseRow[] = [];
     for (let i = 0; i < 5; i++) {
         initialRows.push({
             id: `row-${i}`,
             name: '',
             isCircuit: false,
+            notes: '',
             sets: [
                 { id: `set-${i}-1`, weight: '', reps: '', rirColor: 'white' as RirColor },
                 { id: `set-${i}-2`, weight: '', reps: '', rirColor: 'white' as RirColor },
@@ -94,6 +106,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
       id: Date.now().toString(),
       name: '',
       isCircuit: false,
+      notes: '',
       sets: [
         { id: `s1-${Date.now()}`, weight: '', reps: '', rirColor: 'white' as RirColor },
         { id: `s2-${Date.now()}`, weight: '', reps: '', rirColor: 'white' as RirColor },
@@ -106,7 +119,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
     setRows(rows.filter(r => r.id !== rowId));
   };
 
-  const updateRow = (rowId: string, field: 'name' | 'isCircuit', value: any) => {
+  const updateRow = (rowId: string, field: 'name' | 'isCircuit' | 'notes', value: any) => {
     setRows(rows.map(r => r.id === rowId ? { ...r, [field]: value } : r));
   };
 
@@ -132,7 +145,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
             id: Date.now().toString(), 
             weight: lastSet ? lastSet.weight : '', 
             reps: lastSet ? lastSet.reps : '', 
-            rirColor: 'white' as RirColor 
+            rirColor: lastSet ? lastSet.rirColor : 'white' as RirColor 
           }] 
         };
       }
@@ -159,18 +172,25 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
 
   const handleSave = async () => {
      if (!currentUser?.uid) return;
+     const workoutData = {
+        userId: currentUser.uid,
+        date: initialData?.date || date.toISOString(),
+        type: workoutName,
+        duration: durationStr,
+        bodyWeight: bodyWeight,
+        supplements: selectedSupplements,
+        notes: notes,
+        exercises: rows.filter(r => r.name.trim() !== '')
+      };
+
      try {
-       await addDoc(collection(db, 'workouts'), {
-         userId: currentUser.uid,
-         date: date.toISOString(),
-         type: workoutName,
-         duration: durationStr,
-         bodyWeight: bodyWeight,
-         supplements: selectedSupplements,
-         notes: notes,
-         exercises: rows.filter(r => r.name.trim() !== '')
-       });
-       alert('Workout Saved Successfully!');
+       if (initialData?.id) {
+          await updateWorkout(initialData.id, workoutData);
+          if (onSuccess) onSuccess({ id: initialData.id, ...workoutData });
+       } else {
+          const docRef = await addDoc(collection(db, 'workouts'), workoutData);
+          if (onSuccess) onSuccess({ id: docRef.id, ...workoutData });
+       }
        onClose();
      } catch (err) {
        console.error(err);
@@ -184,7 +204,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
         <div className="form-header">
           <div style={{display: 'flex', flexDirection: 'column'}}>
              <span style={{ fontSize: '0.875rem', color: 'var(--color-primary)', fontWeight: 600 }}>{date.toLocaleDateString()}</span>
-             <h2>{t('log_workout', 'Log Workout')}</h2>
+             <h2>{initialData ? t('edit_workout', 'Edit Workout') : t('log_workout', 'Log Workout')}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} style={{ transform: 'scale(1.2)' }}>&times;</button>
         </div>
@@ -204,17 +224,12 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                     onChange={e => setWorkoutName(e.target.value)}
                 />
                 {showWorkoutDropdown && (
-                    <div className="autocomplete-dropdown glass">
+                    <div className="autocomplete-dropdown glass" style={{ width: '300px' }}>
                     {userWorkoutNames.filter(n => n.toLowerCase().includes(workoutName.toLowerCase())).map(name => (
                         <div key={name} className="autocomplete-item" onClick={() => setWorkoutName(name)}>
                         {name}
                         </div>
                     ))}
-                    {workoutName && !userWorkoutNames.includes(workoutName) && (
-                        <div className="autocomplete-item new">
-                            "{workoutName}" will be used for this workout!
-                        </div>
-                    )}
                     </div>
                 )}
                 </div>
@@ -224,7 +239,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                     <input 
                       type="number" 
                       className="minimal" 
-                      style={{width: '50px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
+                      style={{width: '60px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
                       value={durationStr} 
                       onChange={e => setDurationStr(e.target.value)} 
                     />
@@ -236,7 +251,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                     <input 
                       type="number" 
                       className="minimal" 
-                      style={{width: '50px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
+                      style={{width: '60px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
                       value={bodyWeight} 
                       onChange={e => setBodyWeight(e.target.value)} 
                     />
@@ -295,7 +310,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                       )}
                     </div>
 
-                    <div className="cell col-ex" style={{position: 'relative'}}>
+                    <div className="cell col-ex" style={{position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                       <input 
                         type="text" 
                         className="input-field minimal cell-input" 
@@ -304,9 +319,10 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                         onFocus={() => setFocusedExerciseRow(row.id)}
                         onBlur={() => setTimeout(() => setFocusedExerciseRow(null), 200)}
                         onChange={e => updateRow(row.id, 'name', e.target.value)}
+                        style={{ fontWeight: 600 }}
                       />
                       {focusedExerciseRow === row.id && (
-                        <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '100%', left: 0, zIndex: 50, width: '100%'}}>
+                        <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '45px', left: 0, zIndex: 50, width: '100%'}}>
                           {MOCK_EXERCISES.filter(ex => ex.toLowerCase().includes(row.name.toLowerCase())).map(ex => (
                             <div key={ex} className="autocomplete-item" onClick={() => updateRow(row.id, 'name', ex)}>
                               {ex}
@@ -314,6 +330,18 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                           ))}
                         </div>
                       )}
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: row.notes ? 1 : 0.4 }}>
+                          <MessageSquare size={14} color="var(--color-primary)" />
+                          <input 
+                            type="text" 
+                            className="minimal" 
+                            placeholder={t('ex_notes', 'Notes/Technique...')}
+                            value={row.notes || ''}
+                            onChange={e => updateRow(row.id, 'notes', e.target.value)}
+                            style={{ fontSize: '0.75rem', background: 'transparent' }}
+                          />
+                      </div>
                     </div>
 
                     <div className="cell col-sets-container">
@@ -331,7 +359,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                                 <span className="weight-input identical-placeholder">==</span>
                               ) : (
                                 <input 
-                                  type="text" inputMode="numeric" pattern="[0-9]*"
+                                  type="text" inputMode="numeric"
                                   className="input-field minimal weight-input" 
                                   placeholder="kg"
                                   value={set.weight}
@@ -346,7 +374,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                                 <span className="reps-input identical-placeholder">==</span>
                               ) : (
                                 <input 
-                                  type="text" inputMode="numeric" pattern="[0-9]*"
+                                  type="text" inputMode="numeric"
                                   className="input-field minimal reps-input" 
                                   placeholder="rps"
                                   value={set.reps}
@@ -359,11 +387,14 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                               className="rir-select"
                               value={set.rirColor}
                               onChange={(e) => updateSet(row.id, set.id, 'rirColor', e.target.value as RirColor)}
+                              style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}
                             >
                               <option value="white">⚪️ RIR</option>
+                              <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
                               <option value="green">🟢 2-3</option>
-                              <option value="red">🔴 FAIL</option>
-                              <option value="cheating">🟠 CHEAT</option>
+                              <option value="red0">🔴 F0 ({t('fail', 'Fail')})</option>
+                              <option value="redNeg">🟣 F-1 ({t('beyond', 'Beyond')})</option>
+                              <option value="cheating">🟠 CHT ({t('cheat', 'Cheat')})</option>
                             </select>
                             <button className="del-set" onClick={() => removeSetFromRow(row.id, set.id)}>&times;</button>
                           </div>
@@ -388,7 +419,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
               <div className="form-section" style={{ marginTop: '1.5rem' }}>
                 <textarea 
                   className="input-field" 
-                  placeholder={t('notes_placeholder', 'How did you feel today?')} 
+                  placeholder={t('notes_placeholder', 'Overall session notes...')} 
                   rows={2}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
@@ -400,7 +431,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
         <div className="form-footer">
           <button className="btn-secondary" onClick={onClose}>{t('cancel', 'Cancel')}</button>
           <button className="btn-primary flex-center" onClick={handleSave}>
-            <CheckCircle2 size={18} /> {t('save_workout', 'Finish Workout')}
+            <CheckCircle2 size={18} /> {initialData ? t('update_workout', 'Update Success') : t('save_workout', 'Finish Workout')}
           </button>
         </div>
       </div>

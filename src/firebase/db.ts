@@ -1,5 +1,5 @@
 import { 
-  doc, getDoc, setDoc, updateDoc, 
+  doc, getDoc, setDoc, updateDoc, deleteDoc,
   collection, query, where, getDocs, writeBatch 
 } from 'firebase/firestore';
 import { db } from './config';
@@ -41,6 +41,28 @@ export const updateUserProfile = async (uid: string, updates: any) => {
     await updateDoc(userRef, updates);
   } catch (error) {
     console.error('Error updating profile', error);
+    throw error;
+  }
+};
+
+export const updateWorkout = async (workoutId: string, updates: any) => {
+  if (!workoutId) return;
+  try {
+    const workoutRef = doc(db, 'workouts', workoutId);
+    await updateDoc(workoutRef, updates);
+  } catch (error) {
+    console.error('Error updating workout', error);
+    throw error;
+  }
+};
+
+export const deleteWorkout = async (workoutId: string) => {
+  if (!workoutId) return;
+  try {
+    const workoutRef = doc(db, 'workouts', workoutId);
+    await deleteDoc(workoutRef);
+  } catch (error) {
+    console.error('Error deleting workout', error);
     throw error;
   }
 };

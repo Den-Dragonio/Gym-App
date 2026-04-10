@@ -181,7 +181,7 @@
 /* Columns */
 .cell { display: flex;}
 .col-circ { flex: 0 0 30px; justify-content: center; margin-top: 0.25rem; }
-.col-ex { flex: 0 0 150px; }
+.col-ex { flex: 0 0 240px; } /* Widened from 150px */
 .col-sets-container { flex: 1; }
 .col-actions { flex: 0 0 40px; justify-content: flex-end; margin-top: 0.25rem;}
 
@@ -278,9 +278,11 @@ input[type=number] {
 
 /* RIR Backgrounds based on class */
 .rir-white { background-color: var(--color-bg-card); }
-.rir-red { background-color: rgba(239, 68, 68, 0.2); border-color: var(--color-danger); }
+.rir-red, .rir-red0 { background-color: rgba(239, 68, 68, 0.2); border-color: var(--color-danger); }
 .rir-green { background-color: rgba(16, 185, 129, 0.2); border-color: var(--color-success); }
-.rir-cheating { background-color: rgba(245, 158, 11, 0.2); border-color: #f59e0b; } /* Orange warning cheating */
+.rir-cheating { background-color: rgba(245, 158, 11, 0.2); border-color: #f59e0b; }
+.rir-approx { background-color: rgba(148, 163, 184, 0.2); border-color: #94a3b8; }
+.rir-redNeg { background-color: rgba(168, 85, 247, 0.2); border-color: #a855f7; } /* Orange warning cheating */
 
 [data-theme="dark"] .rir-red,
 [data-theme="dark"] .rir-green,
