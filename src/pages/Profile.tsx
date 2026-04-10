@@ -36,6 +36,9 @@ interface GymLocation {
   name: string;
   location: string;
   url: string;
+  startDate: string;
+  endDate: string;
+  isCurrent: boolean;
 }
 
 export const Profile = () => {
@@ -214,8 +217,14 @@ export const Profile = () => {
 
   const addGym = () => {
     if (newGym.name) {
-      setGyms([...gyms, { ...newGym, id: Math.random().toString(36).substr(2, 9) }]);
-      setNewGym({ name: '', location: '', url: '' });
+      const g: GymLocation = { 
+        ...newGym, 
+        id: Math.random().toString(36).substr(2, 9),
+        startDate: newGym.startDate || new Date().toISOString().split('T')[0],
+        endDate: newGym.isCurrent ? '' : (newGym.endDate || ''),
+      };
+      setGyms([...gyms, g]);
+      setNewGym({ name: '', location: '', url: '', startDate: '', endDate: '', isCurrent: false });
     }
   };
 
@@ -226,7 +235,14 @@ export const Profile = () => {
 
   const [newSupp, setNewSupp] = useState('');
   const [newWorkoutName, setNewWorkoutName] = useState('');
-  const [newGym, setNewGym] = useState({ name: '', location: '', url: '' });
+  const [newGym, setNewGym] = useState({ 
+    name: '', 
+    location: '', 
+    url: '', 
+    startDate: '', 
+    endDate: '', 
+    isCurrent: false 
+  });
 
   // Stats logic
   const [stats, setStats] = useState({
@@ -598,25 +614,47 @@ export const Profile = () => {
         </h3>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
           {gyms.length === 0 && <p style={{ color: 'var(--color-text-tertiary)', fontSize: '0.875rem' }}>No physical gyms visited yet.</p>}
-          {gyms.map(gym => (
+          {[...gyms].sort((a,b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime()).map(gym => (
             <div key={gym.id} style={{ flex: '1 1 200px', backgroundColor: 'var(--color-bg-input)', padding: '1rem', borderRadius: 'var(--radius-md)', position: 'relative' }}>
               {isOwner && isEditing && (
                   <button style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', color: 'var(--color-danger)' }} onClick={() => removeGym(gym.id)}>
                       <Trash2 size={14} />
                   </button>
               )}
-              <h4 style={{ margin: '0 0 0.5rem 0' }}>{gym.name}</h4>
+              <h4 style={{ margin: '0 0 0.25rem 0' }}>{gym.name}</h4>
+              <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.7rem', color: 'var(--color-primary)', fontWeight: 600 }}>
+                  {new Date(gym.startDate).toLocaleDateString()} — {gym.isCurrent ? t('present', 'Present') : (gym.endDate ? new Date(gym.endDate).toLocaleDateString() : '...')}
+              </p>
               <p style={{ margin: '0 0 0.5rem 0', fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{gym.location}</p>
               {gym.url && <a href={gym.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.75rem', color: 'var(--color-primary)' }}>Visit Website</a>}
             </div>
           ))}
           {isEditing && isOwner && (
-              <div style={{ flex: '1 1 200px', backgroundColor: 'var(--color-bg-card)', padding: '1rem', borderRadius: 'var(--radius-md)', border: '2px dashed var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div style={{ flex: '1 1 250px', backgroundColor: 'var(--color-bg-card)', padding: '1.25rem', borderRadius: 'var(--radius-md)', border: '2px dashed var(--color-border)', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   <h4 style={{margin: 0, fontSize: '0.875rem'}}>{t('add_gym', 'Add New Gym')}</h4>
                   <input type="text" className="input-field minimal" placeholder={t('gym_name', 'Gym Name')} value={newGym.name} onChange={e => setNewGym({...newGym, name: e.target.value})} />
                   <input type="text" className="input-field minimal" placeholder={t('gym_address', 'Address / City')} value={newGym.location} onChange={e => setNewGym({...newGym, location: e.target.value})} />
                   <input type="text" className="input-field minimal" placeholder={t('gym_website', 'Website URL')} value={newGym.url} onChange={e => setNewGym({...newGym, url: e.target.value})} />
-                  <button className="btn-secondary" style={{alignSelf: 'flex-start', marginTop: '0.5rem'}} onClick={addGym}><Plus size={16}/> Add</button>
+                  
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                          <label style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>{t('start_date', 'Start Date')}</label>
+                          <input type="date" className="input-field minimal" value={newGym.startDate} onChange={e => setNewGym({...newGym, startDate: e.target.value})} />
+                      </div>
+                      {!newGym.isCurrent && (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                              <label style={{ fontSize: '0.65rem', color: 'var(--color-text-secondary)' }}>{t('end_date', 'End Date')}</label>
+                              <input type="date" className="input-field minimal" value={newGym.endDate} onChange={e => setNewGym({...newGym, endDate: e.target.value})} />
+                          </div>
+                      )}
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+                      <input type="checkbox" id="currGym" checked={newGym.isCurrent} onChange={e => setNewGym({...newGym, isCurrent: e.target.checked})} />
+                      <label htmlFor="currGym" style={{ fontSize: '0.75rem', cursor: 'pointer' }}>{t('training_here_now', 'Currently training here')}</label>
+                  </div>
+
+                  <button className="btn-secondary" style={{alignSelf: 'flex-start', marginTop: '0.5rem'}} onClick={addGym}><Plus size={16}/> Add Experience</button>
               </div>
           )}
         </div>
