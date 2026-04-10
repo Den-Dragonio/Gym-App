@@ -3,10 +3,11 @@ import {
   onAuthStateChanged, 
   signOut as firebaseSignOut,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  deleteUser
 } from 'firebase/auth';
 import { auth } from '../firebase/config';
-import { createUserDocument, getUserDocument } from '../firebase/db';
+import { createUserDocument, getUserDocument, deleteAllUserData } from '../firebase/db';
 
 export interface AppUser {
   uid: string;
@@ -18,6 +19,7 @@ export interface AppUser {
   showEmail?: boolean;
   bio?: string;
   avatarUrl?: string;
+  avatarPosition?: number;
   supplements?: string[];
   workoutNames?: string[];
   daysPlan?: string[];
@@ -41,11 +43,11 @@ interface AuthContextType {
   logout: () => Promise<void>;
   login: (username: string, pass: string) => Promise<void>;
   register: (username: string, pass: string) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// The proxy domain to trick Firebase into accepting username-only auth
 const PROXY_DOMAIN = '@gym-tracker.local';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -55,12 +57,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // Fetch custom user profile from Firestore mapping to this auth
         const profileData = await getUserDocument(user.uid);
-        
         setCurrentUser({
           uid: user.uid,
-          username: user.email?.split('@')[0] || 'Unknown', // Fallback
+          username: user.email?.split('@')[0] || 'Unknown',
           ...profileData
         } as AppUser);
       } else {
@@ -83,11 +83,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const register = async (username: string, pass: string) => {
     const cleanUsername = username.toLowerCase();
     const proxyEmail = `${cleanUsername}${PROXY_DOMAIN}`;
-    
-    // Create Firebase Auth user
     const userCredential = await createUserWithEmailAndPassword(auth, proxyEmail, pass);
     
-    // Seed Firestore DB document for this user to hold stats
     await createUserDocument(userCredential.user.uid, {
       username: cleanUsername,
       email: '',
@@ -111,8 +108,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const deleteAccount = async () => {
+      if (!auth.currentUser) return;
+      const uid = auth.currentUser.uid;
+      
+      try {
+          // 1. Delete Firestore Data
+          await deleteAllUserData(uid);
+          // 2. Delete Auth User
+          await deleteUser(auth.currentUser);
+      } catch (error: any) {
+          console.error("Deletion failed", error);
+          if (error.code === 'auth/requires-recent-login') {
+              throw new Error("REAUTH_REQUIRED");
+          }
+          throw error;
+      }
+  };
+
   return (
-    <AuthContext.Provider value={{ currentUser, loading, logout, login, register }}>
+    <AuthContext.Provider value={{ currentUser, loading, logout, login, register, deleteAccount }}>
       {!loading && children}
     </AuthContext.Provider>
   );

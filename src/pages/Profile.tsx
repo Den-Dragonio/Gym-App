@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { 
     LogOut, User, Flame, Plus, Trash2, CalendarDays, 
-    Users, Edit3, MapPin, Globe, CheckCircle, ShieldBan
+    Users, Edit3, MapPin, Globe, CheckCircle, ShieldBan, AlertTriangle
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import { updateUserProfile, getUserDocument } from '../firebase/db';
@@ -42,7 +42,7 @@ export const Profile = () => {
   const { uid } = useParams<{ uid: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, deleteAccount } = useAuth();
   const { theme, setTheme, system, setSystem } = useSettings();
 
   const isOwner = !uid || uid === currentUser?.uid;
@@ -100,7 +100,7 @@ export const Profile = () => {
   const [lastName, setLastName] = useState('');
   const [title, setTitle] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
-  const [avatarPosition, setAvatarPosition] = useState(50); // Vertical position %
+  const [avatarPosition, setAvatarPosition] = useState(50);
   const [email, setEmail] = useState('');
   const [showEmail, setShowEmail] = useState(false);
   const [startYear, setStartYear] = useState('');
@@ -150,6 +150,26 @@ export const Profile = () => {
         alert("Failed to save profile");
     } finally {
         setIsSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const confirmation1 = window.confirm(t('delete_account_confirm1', "Are you absolutely sure you want to PERMANENTLY delete your account? All your workout history and social data will be lost forever."));
+    if (!confirmation1) return;
+
+    const confirmation2 = window.confirm(t('delete_account_confirm2', "This action CANNOT be undone. Proceed with deletion?"));
+    if (!confirmation2) return;
+
+    try {
+        await deleteAccount();
+        alert(t('account_deleted', "Your account has been successfully deleted."));
+        navigate('/register');
+    } catch (error: any) {
+        if (error.message === "REAUTH_REQUIRED") {
+            alert(t('reauth_required', "For security reasons, please log out and log back in before deleting your account."));
+        } else {
+            alert(t('delete_failed', "Failed to delete account. Please try again later."));
+        }
     }
   };
 
@@ -228,15 +248,15 @@ export const Profile = () => {
         orderBy('date', 'asc')
       );
       const snapshot = await getDocs(q);
-      const workouts = snapshot.docs.map(doc => doc.data());
+      const workouts = snapshot.docs.map((d: any) => d.data());
       
       if (workouts.length > 0) {
         const firstDate = new Date(workouts[0].date).toLocaleDateString();
         const lastDate = new Date(workouts[workouts.length - 1].date).toLocaleDateString();
-        const maxDuration = Math.max(...workouts.map(w => parseInt(w.duration) || 0));
+        const maxDuration = Math.max(...workouts.map((w: any) => parseInt(w.duration) || 0));
 
         // Streak Aggregation
-        const workoutDates = [...new Set(workouts.map(w => new Date(w.date).toISOString().split('T')[0]))].sort().reverse();
+        const workoutDates = [...new Set(workouts.map((w: any) => new Date(w.date).toISOString().split('T')[0]))].sort().reverse();
         
         // Daily Streak logic
         let dailyStreak = 0;
@@ -249,8 +269,8 @@ export const Profile = () => {
            
            dailyStreak = 1;
            for (let i = dateIndex; i < workoutDates.length - 1; i++) {
-              const current = new Date(workoutDates[i]);
-              const prev = new Date(workoutDates[i+1]);
+              const current = new Date(workoutDates[i] as string);
+              const prev = new Date(workoutDates[i+1] as string);
               const diff = (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
               if (diff === 1) dailyStreak++;
               else break;
@@ -279,7 +299,7 @@ export const Profile = () => {
             }
         }
 
-        const chartData = workouts.map(w => {
+        const chartData = workouts.map((w: any) => {
             let bench = 0, squat = 0, deadlift = 0;
             w.exercises.forEach((ex: any) => {
                 const name = ex.name.toLowerCase();
@@ -668,6 +688,25 @@ export const Profile = () => {
         </div>
 
       </div>
+      )}
+
+      {/* Danger Zone */}
+      {isOwner && (
+        <div className="card glass" style={{ padding: '2rem', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '2rem' }}>
+            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <AlertTriangle size={20} /> {t('danger_zone', 'Danger Zone')}
+            </h3>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+                {t('delete_account_desc', "Once you delete your account, there is no going back. Please be certain.")}
+            </p>
+            <button 
+                className="btn-secondary" 
+                style={{ backgroundColor: 'var(--color-danger)', color: 'white', borderColor: 'var(--color-danger)' }}
+                onClick={handleDeleteAccount}
+            >
+                {t('delete_account', 'Delete My Account')}
+            </button>
+        </div>
       )}
 
     </div>
