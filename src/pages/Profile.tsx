@@ -487,6 +487,23 @@ export const Profile = () => {
           <button className="btn-primary" onClick={handleSaveProfile} disabled={isSaving}>
             {isSaving ? '...' : t('save_changes', 'Save Changes')}
           </button>
+
+          {/* Danger Zone */}
+          <div style={{ padding: '1.5rem', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '2rem', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(239, 68, 68, 0.05)' }}>
+              <h3 style={{ margin: '0 0 1rem 0', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
+                  <AlertTriangle size={18} /> {t('danger_zone', 'Danger Zone')}
+              </h3>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)', marginBottom: '1rem' }}>
+                  {t('delete_account_desc', "Once you delete your account, there is no going back. Please be certain.")}
+              </p>
+              <button 
+                  className="btn-secondary" 
+                  style={{ backgroundColor: 'var(--color-danger)', color: 'white', borderColor: 'var(--color-danger)', fontSize: '0.875rem' }}
+                  onClick={handleDeleteAccount}
+              >
+                  {t('delete_account', 'Delete My Account')}
+              </button>
+          </div>
         </div>
       )}
 
@@ -688,25 +705,6 @@ export const Profile = () => {
         </div>
 
       </div>
-      )}
-
-      {/* Danger Zone */}
-      {isOwner && (
-        <div className="card glass" style={{ padding: '2rem', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '2rem' }}>
-            <h3 style={{ margin: '0 0 1rem 0', color: 'var(--color-danger)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <AlertTriangle size={20} /> {t('danger_zone', 'Danger Zone')}
-            </h3>
-            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
-                {t('delete_account_desc', "Once you delete your account, there is no going back. Please be certain.")}
-            </p>
-            <button 
-                className="btn-secondary" 
-                style={{ backgroundColor: 'var(--color-danger)', color: 'white', borderColor: 'var(--color-danger)' }}
-                onClick={handleDeleteAccount}
-            >
-                {t('delete_account', 'Delete My Account')}
-            </button>
-        </div>
       )}
 
     </div>
