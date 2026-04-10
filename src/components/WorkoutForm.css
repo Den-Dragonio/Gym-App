@@ -179,12 +179,12 @@
 }
 
 /* Columns */
-.cell { display: flex;}
-.col-circ { flex: 0 0 30px; justify-content: center; margin-top: 0.25rem; }
-.col-ex { flex: 1; min-width: 180px; } /* Adaptive from fixed 240px */
+.cell { display: flex; align-items: center; justify-content: center; }
+.col-circ { flex: 0 0 30px; justify-content: center; }
+.col-ex { flex: 0 1 300px; min-width: 150px; } /* Constrained from infinite growth */
 .col-sets-container { flex: 0 0 auto; margin: 0 1rem; }
-.col-notes { flex: 0 0 150px; } /* New notes column */
-.col-actions { flex: 0 0 40px; justify-content: flex-end; margin-top: 0.25rem;}
+.col-notes { flex: 0 1 200px; }
+.col-actions { flex: 0 0 40px; justify-content: flex-end; }
 
 .circuit-btn {
   color: var(--color-text-tertiary);
@@ -203,6 +203,7 @@
   background-color: var(--color-bg-input);
   width: 100%;
   border-radius: var(--radius-sm);
+  text-align: center; /* Centering text globally in minimal inputs */
 }
 .minimal:focus {
   border: 1px solid var(--color-primary);

@@ -13,7 +13,6 @@ const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps'
 const MOCK_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
-// Expand RirColor to include new states
 type RirColor = 'white' | 'approx' | 'green' | 'red0' | 'redNeg' | 'cheating' | 'red';
 
 interface SetDetails {
@@ -28,19 +27,20 @@ interface ExerciseRow {
   name: string;
   isCircuit: boolean; 
   sets: SetDetails[];
-  notes?: string; // New: per-exercise notes
+  notes?: string;
 }
 
 interface WorkoutFormProps {
   onClose: () => void;
   date: Date;
-  initialData?: any; // New: for editing
-  onSuccess?: (workout: any) => void; // New: callback after save
+  initialData?: any;
+  onSuccess?: (workout: any) => void;
 }
 
 export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFormProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
+  const unit = i18n.language === 'uk' ? 'кг' : 'kg';
   
   const [workoutName, setWorkoutName] = useState(initialData?.type || '');
   const [bodyWeight, setBodyWeight] = useState(initialData?.bodyWeight || '');
@@ -123,12 +123,22 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     setRows(rows.map(r => r.id === rowId ? { ...r, [field]: value } : r));
   };
 
+  const validateWeight = (val: string) => {
+      // Allow only numbers, dots, and commas
+      return val.replace(/[^0-9.,]/g, '');
+  };
+
   const updateSet = (rowId: string, setId: string, field: 'weight' | 'reps' | 'rirColor', value: string) => {
+    let finalValue = value;
+    if (field === 'weight') {
+        finalValue = validateWeight(value);
+    }
+
     setRows(rows.map(r => {
       if (r.id === rowId) {
         return {
           ...r,
-          sets: r.sets.map(s => s.id === setId ? { ...s, [field]: value } : s)
+          sets: r.sets.map(s => s.id === setId ? { ...s, [field]: finalValue } : s)
         };
       }
       return r;
@@ -222,9 +232,10 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                     onFocus={() => setShowWorkoutDropdown(true)}
                     onBlur={() => setTimeout(() => setShowWorkoutDropdown(false), 200)}
                     onChange={e => setWorkoutName(e.target.value)}
+                    style={{ textAlign: 'center' }}
                 />
                 {showWorkoutDropdown && (
-                    <div className="autocomplete-dropdown glass" style={{ width: '300px' }}>
+                    <div className="autocomplete-dropdown glass" style={{ width: '300px', left: '50%', transform: 'translateX(-50%)' }}>
                     {userWorkoutNames.filter(n => n.toLowerCase().includes(workoutName.toLowerCase())).map(name => (
                         <div key={name} className="autocomplete-item" onClick={() => setWorkoutName(name)}>
                         {name}
@@ -249,17 +260,17 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                 <div className="workout-duration-container" style={{marginLeft: '0.5rem'}} title="Current Bodyweight">
                     <span>⚖️</span>
                     <input 
-                      type="number" 
+                      type="text" 
                       className="minimal" 
-                      style={{width: '60px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
+                      style={{width: '80px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
                       value={bodyWeight} 
-                      onChange={e => setBodyWeight(e.target.value)} 
+                      onChange={e => setBodyWeight(validateWeight(e.target.value))} 
                     />
-                    <span style={{color: 'var(--color-text-secondary)', fontSize: '0.875rem'}}>kg</span>
+                    <span style={{color: 'var(--color-text-secondary)', fontSize: '0.875rem'}}>{unit}</span>
                 </div>
             </div>
 
-            <div className="supplements-section">
+            <div className="supplements-section" style={{ justifyContent: 'center' }}>
               <div style={{ position: 'relative' }}>
                 <button 
                   className="btn-secondary add-supp-btn"
@@ -320,7 +331,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                         onFocus={() => setFocusedExerciseRow(row.id)}
                         onBlur={() => setTimeout(() => setFocusedExerciseRow(null), 200)}
                         onChange={e => updateRow(row.id, 'name', e.target.value)}
-                        style={{ fontWeight: 600 }}
+                        style={{ fontWeight: 600, textAlign: 'center' }}
                       />
                       {focusedExerciseRow === row.id && (
                         <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '45px', left: 0, zIndex: 50, width: '100%'}}>
@@ -348,9 +359,9 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                                 <span className="weight-input identical-placeholder">==</span>
                               ) : (
                                 <input 
-                                  type="text" inputMode="numeric"
+                                  type="text" 
                                   className="input-field minimal weight-input" 
-                                  placeholder="kg"
+                                  placeholder={unit}
                                   value={set.weight}
                                   onChange={(e) => updateSet(row.id, set.id, 'weight', e.target.value)}
                                   title="Weight"
@@ -363,7 +374,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                                 <span className="reps-input identical-placeholder">==</span>
                               ) : (
                                 <input 
-                                  type="text" inputMode="numeric"
+                                  type="text" 
                                   className="input-field minimal reps-input" 
                                   placeholder="rps"
                                   value={set.reps}
@@ -376,7 +387,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                               className="rir-select"
                               value={set.rirColor}
                               onChange={(e) => updateSet(row.id, set.id, 'rirColor', e.target.value as RirColor)}
-                              style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}
+                              style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400, textAlign: 'center' }}
                             >
                               <option value="white">⚪️ RIR</option>
                               <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
@@ -401,7 +412,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                               placeholder={t('ex_notes', 'Note...')}
                               value={row.notes || ''}
                               onChange={e => updateRow(row.id, 'notes', e.target.value)}
-                              style={{ fontSize: '0.75rem', background: 'transparent' }}
+                              style={{ fontSize: '0.75rem', background: 'transparent', textAlign: 'center' }}
                             />
                         </div>
                     </div>
@@ -419,14 +430,14 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                 <Plus size={16} /> {t('add_exercise', 'Add Exercise')}
               </button>
 
-              <div className="form-section" style={{ marginTop: '1.5rem' }}>
+              <div className="form-section" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                 <textarea 
                   className="input-field" 
                   placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} 
                   rows={2}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  style={{ textTransform: 'uppercase', fontWeight: 'bold' }}
+                  style={{ textTransform: 'uppercase', fontWeight: 'bold', textAlign: 'center' }}
                 />
               </div>
           </div>
