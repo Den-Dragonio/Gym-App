@@ -155,7 +155,7 @@
 .workout-table {
   display: flex;
   flex-direction: column;
-  min-width: 600px; /* Reduced from 800px */
+  min-width: 800px; /* Increased to accommodate extra notes column */
 }
 
 .table-row {
@@ -181,8 +181,9 @@
 /* Columns */
 .cell { display: flex;}
 .col-circ { flex: 0 0 30px; justify-content: center; margin-top: 0.25rem; }
-.col-ex { flex: 0 0 240px; } /* Widened from 150px */
-.col-sets-container { flex: 1; }
+.col-ex { flex: 1; min-width: 180px; } /* Adaptive from fixed 240px */
+.col-sets-container { flex: 0 0 auto; margin: 0 1rem; }
+.col-notes { flex: 0 0 150px; } /* New notes column */
 .col-actions { flex: 0 0 40px; justify-content: flex-end; margin-top: 0.25rem;}
 
 .circuit-btn {

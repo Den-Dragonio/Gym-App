@@ -293,6 +293,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                   <div className="cell col-circ" title="Link to previous (Circuit)"></div>
                   <div className="cell col-ex">{t('exercise', 'Exercise')}</div>
                   <div className="cell col-sets-container">{t('sets', 'Sets (Weight × Reps)')}</div>
+                  <div className="cell col-notes" style={{ paddingLeft: '1rem' }}>{t('notes', 'Notes')}</div>
                   <div className="cell col-actions"></div>
                 </div>
 
@@ -310,7 +311,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                       )}
                     </div>
 
-                    <div className="cell col-ex" style={{position: 'relative', display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                    <div className="cell col-ex" style={{position: 'relative'}}>
                       <input 
                         type="text" 
                         className="input-field minimal cell-input" 
@@ -330,18 +331,6 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                           ))}
                         </div>
                       )}
-                      
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: row.notes ? 1 : 0.4 }}>
-                          <MessageSquare size={14} color="var(--color-primary)" />
-                          <input 
-                            type="text" 
-                            className="minimal" 
-                            placeholder={t('ex_notes', 'Notes/Technique...')}
-                            value={row.notes || ''}
-                            onChange={e => updateRow(row.id, 'notes', e.target.value)}
-                            style={{ fontSize: '0.75rem', background: 'transparent' }}
-                          />
-                      </div>
                     </div>
 
                     <div className="cell col-sets-container">
@@ -403,6 +392,20 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                       </div>
                     </div>
 
+                    <div className="cell col-notes" style={{ paddingLeft: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: row.notes ? 1 : 0.4 }}>
+                            <MessageSquare size={14} color="var(--color-primary)" />
+                            <input 
+                              type="text" 
+                              className="minimal" 
+                              placeholder={t('ex_notes', 'Note...')}
+                              value={row.notes || ''}
+                              onChange={e => updateRow(row.id, 'notes', e.target.value)}
+                              style={{ fontSize: '0.75rem', background: 'transparent' }}
+                            />
+                        </div>
+                    </div>
+
                     <div className="cell col-actions">
                       <button className="icon-btn del-row-btn" onClick={() => removeRow(row.id)} style={{marginTop: '0.5rem'}}>
                         <Trash2 size={16}/>
@@ -419,10 +422,11 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
               <div className="form-section" style={{ marginTop: '1.5rem' }}>
                 <textarea 
                   className="input-field" 
-                  placeholder={t('notes_placeholder', 'Overall session notes...')} 
+                  placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} 
                   rows={2}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
+                  style={{ textTransform: 'uppercase', fontWeight: 'bold' }}
                 />
               </div>
           </div>
