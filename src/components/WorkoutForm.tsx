@@ -7,6 +7,7 @@ import './WorkoutForm.css';
 import { useAuth } from '../contexts/AuthContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
+import { getUserDocument } from '../firebase/db';
 
 const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps', 'Back & Biceps', 'Leg Day', 'Dancing', 'Boxing', 'Basketball', 'Football', 'Tennis', 'Swimming', 'Yoga', 'Pilates'];
 const MOCK_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
@@ -43,6 +44,23 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
 
   const [focusedExerciseRow, setFocusedExerciseRow] = useState<string | null>(null);
 
+  // Dynamic lists from profile
+  const [userWorkoutNames, setUserWorkoutNames] = useState<string[]>(DEFAULT_WORKOUT_NAMES);
+  const [userSupplements, setUserSupplements] = useState<string[]>(DEFAULT_SUPPLEMENTS);
+
+  useEffect(() => {
+    const fetchUserLists = async () => {
+      if (!currentUser?.uid) return;
+      const profile = await getUserDocument(currentUser.uid);
+      if (profile) {
+        if (profile.workoutNames) setUserWorkoutNames(profile.workoutNames);
+        if (profile.supplements) setUserSupplements(profile.supplements);
+        if (profile.weight && !bodyWeight) setBodyWeight(profile.weight);
+      }
+    };
+    fetchUserLists();
+  }, [currentUser]);
+
   const [rows, setRows] = useState<ExerciseRow[]>(() => {
     const initialRows: ExerciseRow[] = [];
     for (let i = 0; i < 5; i++) {
@@ -60,22 +78,16 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
     return initialRows;
   });
 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      onClose();
+    }
+  };
+
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      } else if (e.key === 'Enter') {
-        const target = e.target as HTMLElement;
-        const tag = target.tagName.toLowerCase();
-        // Prevent accidental save while typing in inputs
-        if (tag !== 'input' && tag !== 'textarea') {
-           handleSave();
-        }
-      }
-    };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  });
+  }, []);
 
   const addRow = () => {
     setRows([...rows, {
@@ -131,7 +143,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
   const removeSetFromRow = (rowId: string, setId: string) => {
     setRows(rows.map(r => {
       if (r.id === rowId) {
-        if (r.sets.length <= 3) return r; // Minimum 3 sets
+        if (r.sets.length <= 1) return r; 
         return { ...r, sets: r.sets.filter(s => s.id !== setId) };
       }
       return r;
@@ -156,7 +168,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
          bodyWeight: bodyWeight,
          supplements: selectedSupplements,
          notes: notes,
-         exercises: rows
+         exercises: rows.filter(r => r.name.trim() !== '')
        });
        alert('Workout Saved Successfully!');
        onClose();
@@ -179,7 +191,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
 
         <div className="form-body no-scroll-wrapper">
           <div className="header-meta">
-             
+              
             <div className="workout-title-row">
                 <div className="workout-title-container">
                 <input 
@@ -193,14 +205,14 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                 />
                 {showWorkoutDropdown && (
                     <div className="autocomplete-dropdown glass">
-                    {DEFAULT_WORKOUT_NAMES.filter(n => n.toLowerCase().includes(workoutName.toLowerCase())).map(name => (
+                    {userWorkoutNames.filter(n => n.toLowerCase().includes(workoutName.toLowerCase())).map(name => (
                         <div key={name} className="autocomplete-item" onClick={() => setWorkoutName(name)}>
                         {name}
                         </div>
                     ))}
-                    {workoutName && !DEFAULT_WORKOUT_NAMES.includes(workoutName) && (
+                    {workoutName && !userWorkoutNames.includes(workoutName) && (
                         <div className="autocomplete-item new">
-                            "{workoutName}" will be added to your custom list!
+                            "{workoutName}" will be used for this workout!
                         </div>
                     )}
                     </div>
@@ -242,7 +254,7 @@ export const WorkoutForm = ({ onClose, date }: { onClose: () => void, date: Date
                 </button>
                 {suppDropdownOpen && (
                   <div className="supp-dropdown glass">
-                    {DEFAULT_SUPPLEMENTS.filter(s => !selectedSupplements.includes(s)).map(supp => (
+                    {userSupplements.filter(s => !selectedSupplements.includes(s)).map(supp => (
                       <div key={supp} className="supp-item" onClick={() => toggleSupplement(supp)}>
                         {supp}
                       </div>
