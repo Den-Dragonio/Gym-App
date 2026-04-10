@@ -232,10 +232,10 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                     onFocus={() => setShowWorkoutDropdown(true)}
                     onBlur={() => setTimeout(() => setShowWorkoutDropdown(false), 200)}
                     onChange={e => setWorkoutName(e.target.value)}
-                    style={{ textAlign: 'center' }}
+                    style={{ textAlign: 'left' }}
                 />
                 {showWorkoutDropdown && (
-                    <div className="autocomplete-dropdown glass" style={{ width: '300px', left: '50%', transform: 'translateX(-50%)' }}>
+                    <div className="autocomplete-dropdown glass" style={{ width: '300px', left: '0' }}>
                     {userWorkoutNames.filter(n => n.toLowerCase().includes(workoutName.toLowerCase())).map(name => (
                         <div key={name} className="autocomplete-item" onClick={() => setWorkoutName(name)}>
                         {name}
@@ -270,7 +270,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                 </div>
             </div>
 
-            <div className="supplements-section" style={{ justifyContent: 'center' }}>
+            <div className="supplements-section" style={{ justifyContent: 'flex-start' }}>
               <div style={{ position: 'relative' }}>
                 <button 
                   className="btn-secondary add-supp-btn"
@@ -331,7 +331,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                         onFocus={() => setFocusedExerciseRow(row.id)}
                         onBlur={() => setTimeout(() => setFocusedExerciseRow(null), 200)}
                         onChange={e => updateRow(row.id, 'name', e.target.value)}
-                        style={{ fontWeight: 600, textAlign: 'center' }}
+                        style={{ fontWeight: 600, textAlign: 'left' }}
                       />
                       {focusedExerciseRow === row.id && (
                         <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '45px', left: 0, zIndex: 50, width: '100%'}}>
@@ -412,7 +412,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                               placeholder={t('ex_notes', 'Note...')}
                               value={row.notes || ''}
                               onChange={e => updateRow(row.id, 'notes', e.target.value)}
-                              style={{ fontSize: '0.75rem', background: 'transparent', textAlign: 'center' }}
+                              style={{ fontSize: '0.75rem', background: 'transparent', textAlign: 'left' }}
                             />
                         </div>
                     </div>
@@ -430,14 +430,14 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                 <Plus size={16} /> {t('add_exercise', 'Add Exercise')}
               </button>
 
-              <div className="form-section" style={{ marginTop: '1.5rem', textAlign: 'center' }}>
+              <div className="form-section" style={{ marginTop: '1.5rem', textAlign: 'left' }}>
                 <textarea 
                   className="input-field" 
                   placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} 
                   rows={2}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  style={{ textTransform: 'uppercase', fontWeight: 'bold', textAlign: 'center' }}
+                  style={{ textTransform: 'uppercase', fontWeight: 'bold', textAlign: 'left' }}
                 />
               </div>
           </div>
