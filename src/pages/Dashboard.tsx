@@ -36,9 +36,51 @@ export const Dashboard = () => {
     fetchMonthWorkouts();
   }, [currentUser, isFormOpen]);
 
-  const dailyStreak = 0; 
-  const planStreak = 0;
-  
+  // Streak Aggregation
+  let dailyStreak = 0;
+  let planStreak = 0;
+
+  if (allWorkouts.length > 0) {
+      const workoutDates = [...new Set(allWorkouts.map((w: any) => new Date(w.date).toISOString().split('T')[0]))].sort().reverse();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+      
+      if (workoutDates.includes(today) || workoutDates.includes(yesterday)) {
+         let checkDate = workoutDates.includes(today) ? today : yesterday;
+         let dateIndex = workoutDates.indexOf(checkDate);
+         
+         dailyStreak = 1;
+         for (let i = dateIndex; i < workoutDates.length - 1; i++) {
+            const current = new Date(workoutDates[i] as string);
+            const prev = new Date(workoutDates[i+1] as string);
+            const diff = (current.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24);
+            if (diff === 1) dailyStreak++;
+            else break;
+         }
+      }
+
+      const daysPlan = currentUser?.daysPlan || [];
+      if (daysPlan.length > 0) {
+          const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+          let currentCheck = new Date();
+          let missedPlanDay = false;
+          while (!missedPlanDay) {
+              const dayName = dayNames[currentCheck.getDay()];
+              const dateKey = currentCheck.toISOString().split('T')[0];
+              if (daysPlan.includes(dayName)) {
+                  if (workoutDates.includes(dateKey)) {
+                      planStreak++;
+                  } else if (dateKey !== today) {
+                      missedPlanDay = true;
+                  }
+              }
+              if (missedPlanDay) break;
+              currentCheck.setDate(currentCheck.getDate() - 1);
+              if (planStreak > 1000 || currentCheck.getTime() < new Date(workoutDates[workoutDates.length - 1]).getTime() - 86400000) break;
+          }
+      }
+  }  
   const completedDays: any[] = allWorkouts.map(w => ({
       date: format(new Date(w.date), 'yyyy-MM-dd'),
       type: 'Other'

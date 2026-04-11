@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 export const Login = () => {
   const [username, setUsername] = useState('');
@@ -10,7 +9,6 @@ export const Login = () => {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +46,7 @@ export const Login = () => {
           </div>
         </div>
         
-        <h2 style={{ textAlign: 'center', margin: '0 0 2rem 0' }}>{t('login')}</h2>
+        <h2 style={{ textAlign: 'center', margin: '0 0 2rem 0' }}>Login</h2>
         
         {error && <div style={{ backgroundColor: 'var(--color-danger)', color: 'white', padding: '0.75rem', borderRadius: '0.5rem', marginBottom: '1rem', fontSize: '0.875rem' }}>{error}</div>}
 
@@ -78,7 +76,7 @@ export const Login = () => {
           </div>
           
           <button type="submit" className="btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '0.75rem', fontSize: '1rem' }}>
-            {t('login')}
+            Login
           </button>
         </form>
 

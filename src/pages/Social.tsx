@@ -5,7 +5,7 @@ import { Search, UserPlus, UserCheck, ShieldBan, CalendarDays } from 'lucide-rea
 import { db } from '../firebase/config';
 import { 
     collection, query, where, getDocs, limit, 
-    doc, setDoc, getDoc, onSnapshot
+    doc, setDoc, getDoc, onSnapshot, deleteDoc
 } from 'firebase/firestore';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -21,6 +21,9 @@ export const Social = () => {
   const [friends, setFriends] = useState<any[]>([]); 
   const [blockedUsers, setBlockedUsers] = useState<string[]>([]); // IDs of users I blocked or who blocked me
 
+  const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  const [blacklist, setBlacklist] = useState<any[]>([]);
+
   // Fetch blocks (both ways)
   useEffect(() => {
     if (!currentUser?.uid) return;
@@ -29,9 +32,15 @@ export const Social = () => {
     const q1 = query(collection(db, 'blocks'), where('blockerId', '==', currentUser.uid));
     const q2 = query(collection(db, 'blocks'), where('blockedId', '==', currentUser.uid));
 
-    const unsub1 = onSnapshot(q1, (snap) => {
+    const unsub1 = onSnapshot(q1, async (snap) => {
         const ids = snap.docs.map(d => d.data().blockedId);
         setBlockedUsers(prev => Array.from(new Set([...prev, ...ids])));
+
+        const blockedData = await Promise.all(ids.map(async (id: string) => {
+           const userSnap = await getDoc(doc(db, 'users', id));
+           return userSnap.exists() ? { id, ...userSnap.data() } : null;
+        }));
+        setBlacklist(blockedData.filter(u => u !== null));
     });
     const unsub2 = onSnapshot(q2, (snap) => {
         const ids = snap.docs.map(d => d.data().blockerId);
@@ -40,6 +49,22 @@ export const Social = () => {
 
     return () => { unsub1(); unsub2(); };
   }, [currentUser]);
+
+  // Fetch pending requests
+  useEffect(() => {
+    if (!currentUser?.uid) return;
+    const reqQuery = query(collection(db, 'friend_requests'), where('toId', '==', currentUser.uid), where('status', '==', 'pending'));
+    const unsub = onSnapshot(reqQuery, async (snapshot) => {
+        const requests = snapshot.docs.map(doc => ({ reqId: doc.id, ...doc.data() }));
+        const reqData = await Promise.all(requests.map(async (r: any) => {
+            const userSnap = await getDoc(doc(db, 'users', r.fromId));
+            return userSnap.exists() ? { reqId: r.reqId, id: r.fromId, ...userSnap.data() } : null;
+        }));
+        setPendingRequests(reqData.filter(r => r !== null));
+    });
+    return () => unsub();
+  }, [currentUser]);
+
 
   // Fetch friends real-time
   useEffect(() => {
@@ -108,17 +133,52 @@ export const Social = () => {
     const docId = [currentUser.uid, friendId].sort().join('_');
     
     try {
-        await setDoc(doc(db, 'friendships', docId), {
-            users: [currentUser.uid, friendId],
-            uid1: currentUser.uid,
-            uid2: friendId,
-            since: new Date().toISOString()
+        await setDoc(doc(db, 'friend_requests', docId), {
+            fromId: currentUser.uid,
+            toId: friendId,
+            status: 'pending',
+            timestamp: new Date().toISOString()
         });
         setSearchQuery('');
         setSearchResults([]);
+        alert('Friend request sent!');
     } catch (e) {
         console.error("Failed to add friend", e);
     }
+  };
+
+  const handleAcceptRequest = async (request: any) => {
+    if (!currentUser?.uid) return;
+    const docId = [currentUser.uid, request.id].sort().join('_');
+    
+    try {
+        await setDoc(doc(db, 'friendships', docId), {
+            users: [currentUser.uid, request.id],
+            uid1: currentUser.uid,
+            uid2: request.id,
+            since: new Date().toISOString()
+        });
+        await deleteDoc(doc(db, 'friend_requests', request.reqId));
+    } catch (e) {
+        console.error("Failed to accept", e);
+    }
+  };
+
+  const handleRejectRequest = async (reqId: string) => {
+    try {
+        await deleteDoc(doc(db, 'friend_requests', reqId));
+    } catch (e) {
+        console.error("Failed to reject", e);
+    }
+  };
+
+  const handleUnblock = async (blockedId: string) => {
+     if (!currentUser?.uid) return;
+     try {
+         await deleteDoc(doc(db, 'blocks', `block_${currentUser.uid}_${blockedId}`));
+     } catch(e) {
+         console.error("Failed to unblock", e);
+     }
   };
 
   const isAlreadyFriend = (userId: string) => {
@@ -197,6 +257,42 @@ export const Social = () => {
         </div>
       )}
 
+      {/* Pending Requests */}
+      {pendingRequests.length > 0 && (
+        <div className="card glass" style={{ padding: '1.5rem', borderColor: 'var(--color-primary)' }}>
+          <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-primary)' }}>
+            <UserPlus size={20} /> Pending Requests
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {pendingRequests.map(req => (
+                 <div key={req.reqId} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-bg-card)' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          {req.avatarUrl ? (
+                              <img src={req.avatarUrl} alt="Avatar" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover' }}/>
+                          ) : (
+                              <div style={{ width: 40, height: 40, backgroundColor: 'var(--color-bg-input)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                  <UserCheck size={18}/>
+                              </div>
+                          )}
+                          <div style={{ cursor: 'pointer' }} onClick={() => navigate(`/profile/${req.id}`)}>
+                              <span style={{ fontWeight: 600, display: 'block' }}>@{req.username}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>Wants to be friends</span>
+                          </div>
+                     </div>
+                     <div style={{ display: 'flex', gap: '0.5rem' }}>
+                         <button className="btn-secondary minimal" style={{ color: 'var(--color-danger)' }} onClick={() => handleRejectRequest(req.reqId)}>
+                             Reject
+                         </button>
+                         <button className="btn-primary" onClick={() => handleAcceptRequest(req)}>
+                             Accept
+                         </button>
+                     </div>
+                 </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Friends List */}
       <div className="card glass" style={{ padding: '1.5rem' }}>
         <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -228,6 +324,27 @@ export const Social = () => {
           ))}
         </div>
       </div>
+
+      {/* Blacklist */}
+      {blacklist.length > 0 && (
+        <div className="card glass" style={{ padding: '1.5rem', borderColor: 'var(--color-danger)' }}>
+          <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--color-danger)' }}>
+            <ShieldBan size={20} /> Blacklist
+          </h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {blacklist.map(user => (
+                 <div key={user.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--color-border)', backgroundColor: 'rgba(239, 68, 68, 0.05)' }}>
+                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ fontWeight: 600, display: 'block' }}>@{user.username}</span>
+                     </div>
+                     <button className="btn-secondary minimal" style={{ color: 'var(--color-success)' }} onClick={() => handleUnblock(user.id)}>
+                         Unblock
+                     </button>
+                 </div>
+            ))}
+          </div>
+        </div>
+      )}
 
     </div>
   );

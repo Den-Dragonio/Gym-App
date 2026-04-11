@@ -8,8 +8,9 @@ import {
 } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import { updateUserProfile, getUserDocument } from '../firebase/db';
-import { db } from '../firebase/config';
-import { collection, query, where, getDocs, orderBy, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { db, auth } from '../firebase/config';
+import { collection, query, where, getDocs, onSnapshot, doc, setDoc } from 'firebase/firestore';
+import { updatePassword } from 'firebase/auth';
 import { ProgressChart } from '../components/ProgressChart';
 
 const TITLE_OPTIONS = [
@@ -90,6 +91,10 @@ export const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  // Password change state
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
 
   const displayUser = isOwner ? currentUser : visitedUser;
 
@@ -183,6 +188,22 @@ export const Profile = () => {
     }
   };
 
+  const handleChangePassword = async () => {
+      if (!auth.currentUser || !newPassword) return;
+      try {
+          // If password less than 6 chars, let firebase throw auto error to catch
+          await updatePassword(auth.currentUser, newPassword);
+          setPasswordMsg("Password updated successfully!");
+          setNewPassword("");
+          setTimeout(() => setPasswordMsg(""), 3000);
+      } catch (error: any) {
+          if (error.code === 'auth/requires-recent-login') {
+              setPasswordMsg("Error: Please log out and log back in to change your password.");
+          } else {
+              setPasswordMsg("Failed to update password. Use at least 6 characters.");
+          }
+      }
+  };
 
   const handleBlockUser = async () => {
       if (!currentUser?.uid || !uid) return;
@@ -262,11 +283,11 @@ export const Profile = () => {
       if (!targetUid) return;
       const q = query(
         collection(db, 'workouts'),
-        where('userId', '==', targetUid),
-        orderBy('date', 'asc')
+        where('userId', '==', targetUid)
       );
       const snapshot = await getDocs(q);
       const workouts = snapshot.docs.map((d: any) => d.data());
+      workouts.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
       
       if (workouts.length > 0) {
         const firstDate = new Date(workouts[0].date).toLocaleDateString();
@@ -565,6 +586,26 @@ export const Profile = () => {
           <button className="btn-primary" onClick={handleSaveProfile} disabled={isSaving}>
             {isSaving ? '...' : t('save_changes', 'Save Changes')}
           </button>
+
+          {/* Security Settings */}
+          <div style={{ padding: '1.5rem', border: '1px solid var(--color-border)', marginTop: '2rem', borderRadius: 'var(--radius-md)' }}>
+              <h3 style={{ margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem' }}>
+                  Update Password
+              </h3>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <input 
+                      type="password" 
+                      className="input-field" 
+                      placeholder="New password..." 
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
+                  />
+                  <button className="btn-secondary" onClick={handleChangePassword}>
+                      Update
+                  </button>
+              </div>
+              {passwordMsg && <p style={{ fontSize: '0.85rem', color: passwordMsg.includes('Error') || passwordMsg.includes('Failed') ? 'var(--color-danger)' : 'var(--color-success)', marginTop: '0.5rem' }}>{passwordMsg}</p>}
+          </div>
 
           {/* Danger Zone */}
           <div style={{ padding: '1.5rem', border: '1px solid rgba(239, 68, 68, 0.2)', marginTop: '2rem', borderRadius: 'var(--radius-md)', backgroundColor: 'rgba(239, 68, 68, 0.05)' }}>

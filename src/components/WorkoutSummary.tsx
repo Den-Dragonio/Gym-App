@@ -89,39 +89,54 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
       let lastEffectiveWeight = '';
       
       sets.forEach(set => {
-          const currentWeight = set.weight.trim() || lastEffectiveWeight;
+          const currentWeight = set.weight.trim();
           const lastGroup = groups[groups.length - 1];
-          if (lastGroup && lastGroup.weight === currentWeight) {
-              lastGroup.reps.push(set.reps);
-              lastGroup.rirs.push(set.rirColor);
-          } else {
+          
+          // If weight is specified and different from previous (or first group), start new group
+          // If weight is empty, it inherits the last group's weight
+          if (currentWeight !== '' && currentWeight !== lastEffectiveWeight) {
               groups.push({ weight: currentWeight, reps: [set.reps], rirs: [set.rirColor] });
+              lastEffectiveWeight = currentWeight;
+          } else {
+              if (groups.length === 0) {
+                  groups.push({ weight: '', reps: [set.reps], rirs: [set.rirColor] });
+              } else {
+                  groups[groups.length - 1].reps.push(set.reps);
+                  groups[groups.length - 1].rirs.push(set.rirColor);
+              }
           }
-          lastEffectiveWeight = currentWeight;
       });
 
-      return groups.map((group, gIdx) => (
-          <div key={gIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap', marginBottom: '0.25rem' }}>
-              {gIdx > 0 && <span style={{ color: 'var(--color-text-tertiary)', margin: '0 0.5rem', fontWeight: 300, fontSize: '1.2rem' }}>|</span>}
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+          {groups.map((group, gIdx) => (
+            <div key={gIdx} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              {gIdx > 0 && <span style={{ color: 'var(--color-text-tertiary)', fontWeight: 300 }}>—</span>}
               {group.weight && (
-                  <div style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.2rem 0.6rem', borderRadius: 'var(--radius-sm)', fontWeight: 800, fontSize: '0.9rem', boxShadow: '0 2px 4px rgba(0,0,0,0.2)' }}>
-                      {group.weight} {unit}
-                  </div>
+                <span style={{ fontWeight: 800, color: 'var(--color-primary)', fontSize: '1rem' }}>
+                  {group.weight}{unit}
+                </span>
               )}
-              <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                  {group.reps.map((rep, rIdx) => (
-                      <div key={rIdx} style={{ minWidth: '32px', height: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: getRirColor(group.rirs[rIdx]), border: `1px solid ${getRirBorderColor(group.rirs[rIdx])}`, borderRadius: '8px', position: 'relative', padding: '2px' }}>
-                          <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{rep}</span>
-                          {group.rirs[rIdx] !== 'white' && (
-                              <span style={{ fontSize: '0.55rem', position: 'absolute', top: '-6px', right: '-6px', backgroundColor: getRirBorderColor(group.rirs[rIdx]), color: 'white', padding: '1px 4px', borderRadius: '10px', fontWeight: 900 }}>
-                                  {getRirLabel(group.rirs[rIdx])}
-                              </span>
-                          )}
-                      </div>
-                  ))}
+              <div style={{ display: 'flex', gap: '0.35rem' }}>
+                {group.reps.map((rep, rIdx) => (
+                  <div key={rIdx} style={{ 
+                    minWidth: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    backgroundColor: getRirColor(group.rirs[rIdx]), border: `1px solid ${getRirBorderColor(group.rirs[rIdx])}`, 
+                    borderRadius: '6px', position: 'relative', padding: '0 4px' 
+                  }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{rep}</span>
+                    {group.rirs[rIdx] !== 'white' && (
+                      <span style={{ fontSize: '0.55rem', position: 'absolute', top: '-6px', right: '-6px', backgroundColor: getRirBorderColor(group.rirs[rIdx]), color: 'white', padding: '1px 3px', borderRadius: '8px', fontWeight: 900, zIndex: 1 }}>
+                        {getRirLabel(group.rirs[rIdx])}
+                      </span>
+                    )}
+                  </div>
+                ))}
               </div>
-          </div>
-      ));
+            </div>
+          ))}
+        </div>
+      );
   };
 
   const renderExercise = (ex: ExerciseRow, idx: number, indent: number = 0) => (

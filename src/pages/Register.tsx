@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserPlus } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
 
 export const Register = () => {
   const [username, setUsername] = useState('');
@@ -12,7 +11,6 @@ export const Register = () => {
   
   const { register } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +108,7 @@ export const Register = () => {
         </form>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--color-text-secondary)' }}>
-          Already have handle? <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>{t('login')}</Link>
+          Already have a handle? <Link to="/login" style={{ color: 'var(--color-primary)', fontWeight: 600 }}>Login</Link>
         </p>
       </div>
     </div>
