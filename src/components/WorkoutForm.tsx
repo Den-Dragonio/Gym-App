@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
-  Plus, Trash2, CheckCircle2, ChevronDown, Link, Unlink, Clock, MessageSquare
+  Plus, Trash2, CheckCircle2, ChevronDown, Link, Unlink, Clock, MessageSquare,
+  ArrowRight, XCircle
 } from 'lucide-react';
 import './WorkoutForm.css';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,10 +11,10 @@ import { db } from '../firebase/config';
 import { getUserDocument, updateWorkout } from '../firebase/db';
 
 const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps', 'Back & Biceps', 'Leg Day', 'Dancing', 'Boxing', 'Basketball', 'Football', 'Tennis', 'Swimming', 'Yoga', 'Pilates'];
-const MOCK_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
+const DEFAULT_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
-type RirColor = 'white' | 'approx' | 'green' | 'red0' | 'redNeg' | 'cheating' | 'red';
+type RirColor = 'white' | 'warmup' | 'approx' | 'green' | 'red0' | 'redNeg' | 'cheating' | 'red';
 
 interface SetDetails {
   id: string;
@@ -28,6 +29,9 @@ interface ExerciseRow {
   isCircuit: boolean; 
   sets: SetDetails[];
   notes?: string;
+  swappedTo?: string;
+  dropped?: boolean;
+  droppedReason?: string;
 }
 
 interface WorkoutFormProps {
@@ -56,6 +60,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
   // Dynamic lists from profile
   const [userWorkoutNames, setUserWorkoutNames] = useState<string[]>(DEFAULT_WORKOUT_NAMES);
   const [userSupplements, setUserSupplements] = useState<string[]>(DEFAULT_SUPPLEMENTS);
+  const [userExercises, setUserExercises] = useState<string[]>(DEFAULT_EXERCISES);
 
   useEffect(() => {
     const fetchUserLists = async () => {
@@ -64,6 +69,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
       if (profile) {
         if (profile.workoutNames) setUserWorkoutNames(profile.workoutNames);
         if (profile.supplements) setUserSupplements(profile.supplements);
+        if (profile.exerciseNames) setUserExercises(profile.exerciseNames);
         if (profile.weight && !bodyWeight && !initialData) setBodyWeight(profile.weight);
       }
     };
@@ -119,8 +125,22 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     setRows(rows.filter(r => r.id !== rowId));
   };
 
-  const updateRow = (rowId: string, field: 'name' | 'isCircuit' | 'notes', value: any) => {
+  const updateRow = (rowId: string, field: string, value: any) => {
     setRows(rows.map(r => r.id === rowId ? { ...r, [field]: value } : r));
+  };
+
+  const swapExercise = (rowId: string) => {
+    const newName = prompt(t('swap_prompt', 'What exercise did you switch to?'));
+    if (newName) {
+      setRows(rows.map(r => r.id === rowId ? { ...r, swappedTo: newName } : r));
+    }
+  };
+
+  const dropExercise = (rowId: string) => {
+    const reason = prompt(t('drop_prompt', 'Why did you drop this exercise? (e.g. injury, equipment busy)'));
+    if (reason !== null) {
+      setRows(rows.map(r => r.id === rowId ? { ...r, dropped: true, droppedReason: reason } : r));
+    }
   };
 
   const validateWeight = (val: string) => {
@@ -301,7 +321,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
           <div className="table-scroll-area">
               {rows.map((row, index) => (
-                <div key={row.id} className="exercise-card">
+                <div key={row.id} className={`exercise-card ${row.dropped ? 'exercise-dropped' : ''}`}>
                   {/* Row 1: Circuit + Exercise Name + Delete */}
                   <div className="exercise-card-header" style={{ position: 'relative' }}>
                     {index > 0 ? (
@@ -322,6 +342,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                       onFocus={() => setFocusedExerciseRow(row.id)}
                       onBlur={() => setTimeout(() => setFocusedExerciseRow(null), 200)}
                       onChange={e => updateRow(row.id, 'name', e.target.value)}
+                      style={row.dropped ? { textDecoration: 'line-through', opacity: 0.5 } : undefined}
                     />
                     <button className="icon-btn" onClick={() => removeRow(row.id)} style={{ color: 'var(--color-text-tertiary)' }}>
                       <Trash2 size={16}/>
@@ -329,7 +350,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
                     {focusedExerciseRow === row.id && (
                       <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '42px', left: '2rem', zIndex: 50, width: 'calc(100% - 5rem)'}}>
-                        {MOCK_EXERCISES.filter(ex => ex.toLowerCase().includes(row.name.toLowerCase())).map(ex => (
+                        {userExercises.filter(ex => ex.toLowerCase().includes(row.name.toLowerCase())).map(ex => (
                           <div key={ex} className="autocomplete-item" onClick={() => updateRow(row.id, 'name', ex)}>
                             {ex}
                           </div>
@@ -338,42 +359,43 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                     )}
                   </div>
 
-                  {/* Row 2: Sets */}
+                  {/* Swap indicator */}
+                  {row.swappedTo && (
+                    <div style={{ paddingLeft: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--color-primary)' }}>
+                      <ArrowRight size={14} /> {t('swapped_to', 'Switched to')}: <strong>{row.swappedTo}</strong>
+                      <button className="icon-btn" onClick={() => updateRow(row.id, 'swappedTo', undefined)} style={{ color: 'var(--color-text-tertiary)', padding: '0 0.25rem' }}>&times;</button>
+                    </div>
+                  )}
+
+                  {/* Drop indicator */}
+                  {row.dropped && (
+                    <div style={{ paddingLeft: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--color-danger)' }}>
+                      <XCircle size={14} /> {t('dropped', 'Dropped')}{row.droppedReason ? `: ${row.droppedReason}` : ''}
+                      <button className="icon-btn" onClick={() => { updateRow(row.id, 'dropped', false); updateRow(row.id, 'droppedReason', ''); }} style={{ color: 'var(--color-text-tertiary)', padding: '0 0.25rem' }}>&times;</button>
+                    </div>
+                  )}
+
+                  {/* Row 2: Sets + action buttons */}
                   <div className="exercise-sets-row" style={{ paddingLeft: '2rem' }}>
-                    {row.sets.map((set, sIdx) => {
-                      const prevSet = sIdx > 0 ? row.sets[sIdx - 1] : null;
-                      const wIdentical = prevSet && prevSet.weight && set.weight === prevSet.weight;
-                      const rIdentical = prevSet && prevSet.reps && set.reps === prevSet.reps;
-                      
-                      return (
+                    {row.sets.map((set, sIdx) => (
                       <div key={set.id} className={`set-box rir-${set.rirColor}`}>
                         <span className="set-label">S{sIdx+1}</span>
                         <div className="set-inputs">
-                          {wIdentical ? (
-                            <span className="identical-placeholder">==</span>
-                          ) : (
-                            <input 
-                              type="text" 
-                              className="weight-input" 
-                              placeholder={unit}
-                              value={set.weight}
-                              onChange={(e) => updateSet(row.id, set.id, 'weight', e.target.value)}
-                            />
-                          )}
-                          
+                          <input 
+                            type="text" 
+                            className="weight-input" 
+                            placeholder={unit}
+                            value={set.weight}
+                            onChange={(e) => updateSet(row.id, set.id, 'weight', e.target.value)}
+                          />
                           <span className="set-divider">×</span>
-                          
-                          {wIdentical && rIdentical ? (
-                            <span className="identical-placeholder">==</span>
-                          ) : (
-                            <input 
-                              type="text" 
-                              className="reps-input" 
-                              placeholder="rps"
-                              value={set.reps}
-                              onChange={(e) => updateSet(row.id, set.id, 'reps', e.target.value)}
-                            />
-                          )}
+                          <input 
+                            type="text" 
+                            className="reps-input" 
+                            placeholder="rps"
+                            value={set.reps}
+                            onChange={(e) => updateSet(row.id, set.id, 'reps', e.target.value)}
+                          />
                         </div>
                         <select 
                           className="rir-select"
@@ -382,6 +404,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                           style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}
                         >
                           <option value="white">⚪️ RIR</option>
+                          <option value="warmup">🔵 W ({t('warmup', 'Warmup')})</option>
                           <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
                           <option value="green">🟢 2-3</option>
                           <option value="red0">🔴 F0 ({t('fail', 'Fail')})</option>
@@ -390,8 +413,14 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                         </select>
                         <button className="del-set" onClick={() => removeSetFromRow(row.id, set.id)}>&times;</button>
                       </div>
-                    )})}
+                    ))}
                     <button className="add-set-mini" onClick={() => addSetToRow(row.id)} title="Add Set">+</button>
+                    <button className="action-btn-mini swap-btn" onClick={() => swapExercise(row.id)} title={t('swap_exercise', 'Switch Exercise')}>
+                      <ArrowRight size={16} />
+                    </button>
+                    <button className="action-btn-mini drop-btn" onClick={() => dropExercise(row.id)} title={t('drop_exercise', 'Drop Exercise')}>
+                      <XCircle size={16} />
+                    </button>
                   </div>
 
                   {/* Row 3: Exercise note */}
@@ -435,3 +464,4 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     </div>
   );
 };
+

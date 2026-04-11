@@ -30,6 +30,7 @@ const TITLE_OPTIONS = [
 
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps', 'Back & Biceps', 'Leg Day', 'Dancing', 'Boxing', 'Basketball', 'Football', 'Tennis', 'Swimming', 'Yoga', 'Pilates'];
+const DEFAULT_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press', 'Overhead Press', 'Barbell Row', 'Dumbbell Curl', 'Lat Pulldown', 'Cable Fly', 'Leg Curl', 'Leg Extension', 'Calf Raise'];
 
 interface GymLocation {
   id: string;
@@ -94,6 +95,7 @@ export const Profile = () => {
   // Stats / DB logic
   const [supplements, setSupplements] = useState<string[]>([]);
   const [workoutNames, setWorkoutNames] = useState<string[]>([]);
+  const [exerciseNames, setExerciseNames] = useState<string[]>([]);
   const [daysPlan, setDaysPlan] = useState<string[]>([]);
   const [gender, setGender] = useState('Male');
   const [weight, setWeight] = useState('85');
@@ -117,6 +119,7 @@ export const Profile = () => {
       if (displayUser) {
           setSupplements(displayUser.supplements || DEFAULT_SUPPLEMENTS);
           setWorkoutNames(displayUser.workoutNames || DEFAULT_WORKOUT_NAMES);
+          setExerciseNames(displayUser.exerciseNames || DEFAULT_EXERCISES);
           setDaysPlan(displayUser.daysPlan || ['Monday', 'Wednesday', 'Friday']);
           setGender(displayUser.gender || 'Male');
           setWeight(displayUser.weight || '85');
@@ -144,7 +147,7 @@ export const Profile = () => {
         await updateUserProfile(currentUser.uid, {
             firstName, lastName, title, startYear,
             bio, avatarUrl, avatarPosition, email, showEmail, gender, weight, height, 
-            benchPress, squat, deadlift, gyms, daysPlan, supplements, workoutNames,
+            benchPress, squat, deadlift, gyms, daysPlan, supplements, workoutNames, exerciseNames,
             theme,
             measurementSystem: system,
         });
@@ -215,6 +218,13 @@ export const Profile = () => {
     }
   };
 
+  const addExerciseName = () => {
+    if (newExerciseName && !exerciseNames.includes(newExerciseName)) {
+      setExerciseNames([...exerciseNames, newExerciseName]);
+      setNewExerciseName('');
+    }
+  };
+
   const addGym = () => {
     if (newGym.name) {
       const g: GymLocation = { 
@@ -235,6 +245,7 @@ export const Profile = () => {
 
   const [newSupp, setNewSupp] = useState('');
   const [newWorkoutName, setNewWorkoutName] = useState('');
+  const [newExerciseName, setNewExerciseName] = useState('');
   const [newGym, setNewGym] = useState({ 
     name: '', 
     location: '', 
@@ -740,6 +751,32 @@ export const Profile = () => {
             onChange={e => setNewSupp(e.target.value)}
           />
           <button className="btn-primary" onClick={addSupp}><Plus size={16}/></button>
+        </div>
+
+        <label style={{ display: 'block', margin: '2rem 0 0.5rem', fontWeight: 600 }}>Exercises</label>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+          {exerciseNames.map(ex => (
+            <span key={ex} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', backgroundColor: 'var(--color-bg-input)', padding: '0.25rem 0.75rem', borderRadius: 'var(--radius-full)', border: '1px solid var(--color-border)', fontSize: '0.875rem' }}>
+              {ex} 
+              <button 
+                style={{ color: 'var(--color-danger)' }} 
+                onClick={() => setExerciseNames(exerciseNames.filter(e => e !== ex))}
+              >
+                <Trash2 size={14} />
+              </button>
+            </span>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <input 
+            type="text" 
+            className="input-field" 
+            placeholder="New Exercise..." 
+            value={newExerciseName}
+            onChange={e => setNewExerciseName(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && addExerciseName()}
+          />
+          <button className="btn-primary" onClick={addExerciseName}><Plus size={16}/></button>
         </div>
 
       </div>

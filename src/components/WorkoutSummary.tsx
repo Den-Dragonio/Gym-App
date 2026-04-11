@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { 
   Edit3, Trash2, X, Clock, Scale, 
-  ClipboardList, Zap, Link
+  ClipboardList, Zap, Link, ArrowRight, XCircle
 } from 'lucide-react';
 
 interface SetDetails {
@@ -17,6 +17,9 @@ interface ExerciseRow {
   isCircuit: boolean; 
   sets: SetDetails[];
   notes?: string;
+  swappedTo?: string;
+  dropped?: boolean;
+  droppedReason?: string;
 }
 
 interface Workout {
@@ -39,6 +42,7 @@ interface WorkoutSummaryProps {
 
 const getRirLabel = (rir: string) => {
     switch(rir) {
+        case 'warmup': return 'W';
         case 'approx': return '≈';
         case 'green': return 'R';
         case 'red0': return '0';
@@ -51,6 +55,7 @@ const getRirLabel = (rir: string) => {
 
 const getRirColor = (rir: string) => {
     switch(rir) {
+        case 'warmup': return 'rgba(59, 130, 246, 0.15)';
         case 'approx': return 'rgba(148, 163, 184, 0.2)';
         case 'green': return 'rgba(16, 185, 129, 0.2)';
         case 'red0': return 'rgba(239, 68, 68, 0.2)';
@@ -63,6 +68,7 @@ const getRirColor = (rir: string) => {
 
 const getRirBorderColor = (rir: string) => {
     switch(rir) {
+        case 'warmup': return '#3b82f6';
         case 'approx': return '#94a3b8';
         case 'green': return 'var(--color-success)';
         case 'red0': return 'var(--color-danger)';
@@ -86,7 +92,6 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
           const currentWeight = set.weight.trim() || lastEffectiveWeight;
           
           const lastGroup = groups[groups.length - 1];
-          // If weight is technically the same (inherited or explicit same), group it
           if (lastGroup && lastGroup.weight === currentWeight) {
               lastGroup.reps.push(set.reps);
               lastGroup.rirs.push(set.rirColor);
@@ -156,7 +161,7 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
     <div className="workout-modal-overlay">
       <div className="card glass full-screen-modal" style={{ maxWidth: '900px', margin: '0 auto' }}>
         
-        {/* Header - Left Aligned */}
+        {/* Header */}
         <div className="form-header" style={{ padding: '1.5rem 2rem', justifyContent: 'space-between' }}>
           <div style={{ textAlign: 'left' }}>
             <span style={{ fontSize: '0.875rem', color: 'var(--color-primary)', fontWeight: 600 }}>
@@ -179,8 +184,9 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
         {/* Body */}
         <div className="form-body" style={{ overflowY: 'auto', padding: '2rem' }}>
           
-          {/* Top Stats - Left Aligned */}
+          {/* Top Stats */}
           <div style={{ display: 'flex', gap: '2rem', marginBottom: '2.5rem', flexWrap: 'wrap', justifyContent: 'flex-start' }}>
+             {workout.duration && (
              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                  <div style={{ backgroundColor: 'var(--color-bg-input)', padding: '0.75rem', borderRadius: '50%' }}>
                     <Clock size={20} color="var(--color-primary)" />
@@ -190,6 +196,7 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
                     <strong style={{ fontSize: '1.125rem' }}>{workout.duration} min</strong>
                  </div>
              </div>
+             )}
              {workout.bodyWeight && (
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     <div style={{ backgroundColor: 'var(--color-bg-input)', padding: '0.75rem', borderRadius: '50%' }}>
@@ -216,25 +223,41 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
              )}
           </div>
 
-          {/* Exercises List - Cards take full width but internal text is Left Aligned */}
+          {/* Exercises */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', alignItems: 'flex-start' }}>
              {workout.exercises.map((ex, idx) => (
                 <div key={ex.id} style={{ 
                     padding: '1.5rem', 
                     borderRadius: 'var(--radius-md)', 
                     backgroundColor: 'rgba(255, 255, 255, 0.02)',
-                    border: '1px solid var(--color-border)',
+                    border: `1px solid ${ex.dropped ? 'var(--color-danger)' : 'var(--color-border)'}`,
                     position: 'relative',
                     width: '100%',
-                    maxWidth: '850px'
+                    maxWidth: '850px',
+                    opacity: ex.dropped ? 0.6 : 1
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                         <div style={{ textAlign: 'left' }}>
-                            <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem' }}>
+                            <h3 style={{ margin: '0 0 0.5rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1.25rem', textDecoration: ex.dropped ? 'line-through' : 'none' }}>
                                 <span style={{ color: 'var(--color-primary)', fontSize: '0.875rem', opacity: 0.7 }}>#{idx+1}</span>
                                 {ex.name}
                                 {ex.isCircuit && <Link size={16} color="var(--color-streak-plan)" />}
                             </h3>
+
+                            {/* Swap indicator */}
+                            {ex.swappedTo && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--color-primary)', marginBottom: '0.5rem' }}>
+                                    <ArrowRight size={14} /> {t('swapped_to', 'Switched to')}: <strong>{ex.swappedTo}</strong>
+                                </div>
+                            )}
+
+                            {/* Drop indicator */}
+                            {ex.dropped && (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--color-danger)', marginBottom: '0.5rem' }}>
+                                    <XCircle size={14} /> {t('dropped', 'Dropped')}{ex.droppedReason ? `: ${ex.droppedReason}` : ''}
+                                </div>
+                            )}
+
                             {ex.notes && (
                                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)', fontStyle: 'italic', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
                                     <ClipboardList size={14} style={{ marginTop: '2px' }} /> {ex.notes}
