@@ -90,7 +90,6 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
       
       sets.forEach(set => {
           const currentWeight = set.weight.trim();
-          const lastGroup = groups[groups.length - 1];
           
           // If weight is specified and different from previous (or first group), start new group
           // If weight is empty, it inherits the last group's weight
