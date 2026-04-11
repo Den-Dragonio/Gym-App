@@ -3,7 +3,7 @@ import i18n from '../i18n/config';
 import { useAuth } from './AuthContext';
 
 export type Theme = 'light' | 'dark' | 'system';
-export type Accent = 'blue' | 'green' | 'purple';
+export type Accent = 'blue' | 'green' | 'purple' | 'orange' | 'pink' | 'cyan' | 'red';
 export type MeasurementSystem = 'metric' | 'imperial';
 export type Language = 'en' | 'ru';
 export type DateFormat = 'dd/mm/yyyy' | 'mm/dd/yyyy';

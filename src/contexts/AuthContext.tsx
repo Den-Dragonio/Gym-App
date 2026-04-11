@@ -33,7 +33,7 @@ export interface AppUser {
   createdAt?: string;
   gyms?: any[];
   theme?: 'light' | 'dark' | 'system';
-  accent?: 'blue' | 'green' | 'purple';
+  accent?: 'blue' | 'green' | 'purple' | 'orange' | 'pink' | 'cyan' | 'red';
   measurementSystem?: 'metric' | 'imperial';
   language?: 'en' | 'ru';
   dateFormat?: 'dd/mm/yyyy' | 'mm/dd/yyyy';

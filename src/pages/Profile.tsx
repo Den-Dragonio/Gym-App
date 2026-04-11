@@ -512,24 +512,34 @@ export const Profile = () => {
 
             <div>
                <label className="label">{t('accent', 'Accent Color')}</label>
-               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+               <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
                  {([
-                   { value: 'blue', colors: ['#3b82f6', '#60a5fa'] },
-                   { value: 'green', colors: ['#10b981', '#34d399'] },
-                   { value: 'purple', colors: ['#8b5cf6', '#a78bfa'] },
+                   { value: 'blue', lightBg: '#f0f2f5', darkBg: '#0f172a', accent: '#3b82f6', label: '💎' },
+                   { value: 'green', lightBg: '#ecfdf5', darkBg: '#022c22', accent: '#10b981', label: '🌿' },
+                   { value: 'purple', lightBg: '#f5f3ff', darkBg: '#1e1036', accent: '#8b5cf6', label: '🔮' },
+                   { value: 'orange', lightBg: '#fff7ed', darkBg: '#1c1007', accent: '#f97316', label: '🔥' },
+                   { value: 'pink', lightBg: '#fff1f2', darkBg: '#1c0a14', accent: '#ec4899', label: '🌸' },
+                   { value: 'cyan', lightBg: '#ecfeff', darkBg: '#042f2e', accent: '#06b6d4', label: '🧊' },
+                   { value: 'red', lightBg: '#fef2f2', darkBg: '#1c0505', accent: '#ef4444', label: '❤️' },
                  ] as const).map(opt => (
                    <button
                      key={opt.value}
                      onClick={() => setAccent(opt.value as any)}
                      style={{
-                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
-                       padding: '0.5rem', borderRadius: 'var(--radius-md)',
-                       border: accent === opt.value ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
-                       background: 'transparent', cursor: 'pointer', transition: 'all 0.2s'
+                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.35rem',
+                       padding: '0.4rem', borderRadius: 'var(--radius-md)',
+                       border: accent === opt.value ? `2px solid ${opt.accent}` : '2px solid var(--color-border)',
+                       background: accent === opt.value ? `${opt.accent}11` : 'transparent',
+                       cursor: 'pointer', transition: 'all 0.2s',
+                       transform: accent === opt.value ? 'scale(1.05)' : 'scale(1)'
                      }}
                    >
-                     <div style={{ width: 48, height: 32, borderRadius: 'var(--radius-sm)', background: `linear-gradient(135deg, ${opt.colors[0]} 50%, ${opt.colors[1]} 50%)` }} />
-                     <span style={{ fontSize: '0.7rem', fontWeight: accent === opt.value ? 700 : 400, textTransform: 'capitalize' }}>{opt.value}</span>
+                     <div style={{ width: 44, height: 28, borderRadius: 'var(--radius-sm)', overflow: 'hidden', display: 'flex', border: '1px solid rgba(0,0,0,0.1)' }}>
+                       <div style={{ flex: 1, background: opt.lightBg }} />
+                       <div style={{ width: 10, background: opt.accent }} />
+                       <div style={{ flex: 1, background: opt.darkBg }} />
+                     </div>
+                     <span style={{ fontSize: '0.65rem', fontWeight: accent === opt.value ? 700 : 400, textTransform: 'capitalize' }}>{opt.label} {opt.value}</span>
                    </button>
                  ))}
                </div>

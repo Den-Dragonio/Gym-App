@@ -62,28 +62,128 @@
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
 }
 
-/* ======================
-   ACCENT: GREEN
-   ====================== */
+/* ========================================================
+   ACCENT THEMES — full color scheme for bg, cards, text, etc.
+   ======================================================== */
+
+/* ---- GREEN / EMERALD ---- */
 [data-accent="green"] {
+  --color-bg-main: #ecfdf5;
+  --color-bg-card: #f0fdf4;
+  --color-bg-card-hover: rgba(240, 253, 244, 0.8);
+  --color-bg-input: #ecfdf5;
   --color-primary: #10b981;
   --color-primary-hover: #059669;
+  --color-border: #bbf7d0;
 }
 [data-theme="dark"][data-accent="green"] {
+  --color-bg-main: #022c22;
+  --color-bg-card: #064e3b;
+  --color-bg-card-hover: rgba(6, 78, 59, 0.8);
+  --color-bg-input: #022c22;
   --color-primary: #34d399;
   --color-primary-hover: #10b981;
+  --color-border: #065f46;
 }
 
-/* ======================
-   ACCENT: PURPLE
-   ====================== */
+/* ---- PURPLE / AMETHYST ---- */
 [data-accent="purple"] {
+  --color-bg-main: #f5f3ff;
+  --color-bg-card: #faf5ff;
+  --color-bg-card-hover: rgba(250, 245, 255, 0.8);
+  --color-bg-input: #f5f3ff;
   --color-primary: #8b5cf6;
   --color-primary-hover: #7c3aed;
+  --color-border: #ddd6fe;
 }
 [data-theme="dark"][data-accent="purple"] {
+  --color-bg-main: #1e1036;
+  --color-bg-card: #2e1065;
+  --color-bg-card-hover: rgba(46, 16, 101, 0.8);
+  --color-bg-input: #1e1036;
   --color-primary: #a78bfa;
   --color-primary-hover: #8b5cf6;
+  --color-border: #4c1d95;
+}
+
+/* ---- ORANGE / AMBER ---- */
+[data-accent="orange"] {
+  --color-bg-main: #fff7ed;
+  --color-bg-card: #fffbeb;
+  --color-bg-card-hover: rgba(255, 251, 235, 0.8);
+  --color-bg-input: #fff7ed;
+  --color-primary: #f97316;
+  --color-primary-hover: #ea580c;
+  --color-border: #fed7aa;
+}
+[data-theme="dark"][data-accent="orange"] {
+  --color-bg-main: #1c1007;
+  --color-bg-card: #431407;
+  --color-bg-card-hover: rgba(67, 20, 7, 0.8);
+  --color-bg-input: #1c1007;
+  --color-primary: #fb923c;
+  --color-primary-hover: #f97316;
+  --color-border: #7c2d12;
+}
+
+/* ---- PINK / ROSE ---- */
+[data-accent="pink"] {
+  --color-bg-main: #fff1f2;
+  --color-bg-card: #ffe4e6;
+  --color-bg-card-hover: rgba(255, 228, 230, 0.8);
+  --color-bg-input: #fff1f2;
+  --color-primary: #ec4899;
+  --color-primary-hover: #db2777;
+  --color-border: #fecdd3;
+}
+[data-theme="dark"][data-accent="pink"] {
+  --color-bg-main: #1c0a14;
+  --color-bg-card: #500724;
+  --color-bg-card-hover: rgba(80, 7, 36, 0.8);
+  --color-bg-input: #1c0a14;
+  --color-primary: #f472b6;
+  --color-primary-hover: #ec4899;
+  --color-border: #831843;
+}
+
+/* ---- CYAN / TEAL ---- */
+[data-accent="cyan"] {
+  --color-bg-main: #ecfeff;
+  --color-bg-card: #f0fdfa;
+  --color-bg-card-hover: rgba(240, 253, 250, 0.8);
+  --color-bg-input: #ecfeff;
+  --color-primary: #06b6d4;
+  --color-primary-hover: #0891b2;
+  --color-border: #a5f3fc;
+}
+[data-theme="dark"][data-accent="cyan"] {
+  --color-bg-main: #042f2e;
+  --color-bg-card: #134e4a;
+  --color-bg-card-hover: rgba(19, 78, 74, 0.8);
+  --color-bg-input: #042f2e;
+  --color-primary: #22d3ee;
+  --color-primary-hover: #06b6d4;
+  --color-border: #115e59;
+}
+
+/* ---- RED / CRIMSON ---- */
+[data-accent="red"] {
+  --color-bg-main: #fef2f2;
+  --color-bg-card: #fef2f2;
+  --color-bg-card-hover: rgba(254, 242, 242, 0.8);
+  --color-bg-input: #fef2f2;
+  --color-primary: #ef4444;
+  --color-primary-hover: #dc2626;
+  --color-border: #fecaca;
+}
+[data-theme="dark"][data-accent="red"] {
+  --color-bg-main: #1c0505;
+  --color-bg-card: #450a0a;
+  --color-bg-card-hover: rgba(69, 10, 10, 0.8);
+  --color-bg-input: #1c0505;
+  --color-primary: #f87171;
+  --color-primary-hover: #ef4444;
+  --color-border: #7f1d1d;
 }
 
 /* ======================
