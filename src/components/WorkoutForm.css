@@ -155,7 +155,7 @@
 .workout-table {
   display: flex;
   flex-direction: column;
-  min-width: 800px; /* Increased to accommodate extra notes column */
+  min-width: 900px; /* Increased to accommodate extra notes column */
 }
 
 .table-row {
@@ -253,9 +253,10 @@ input[type=number] {
 }
 
 .weight-input, .reps-input {
-  width: 45px !important;
+  min-width: 45px;
+  width: auto;
   text-align: center;
-  padding: 0.15rem 0; /* compact */
+  padding: 0.15rem 0.25rem;
   font-size: 1rem;
   font-weight: 600;
   background: transparent;

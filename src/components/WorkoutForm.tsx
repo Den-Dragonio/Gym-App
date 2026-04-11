@@ -404,15 +404,22 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                     </div>
 
                     <div className="cell col-notes" style={{ paddingLeft: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', opacity: row.notes ? 1 : 0.4 }}>
-                            <MessageSquare size={14} color="var(--color-primary)" />
-                            <input 
-                              type="text" 
+                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', opacity: row.notes ? 1 : 0.4, width: '100%' }}>
+                            <MessageSquare size={14} color="var(--color-primary)" style={{ marginTop: '0.5rem' }} />
+                            <textarea 
                               className="minimal" 
                               placeholder={t('ex_notes', 'Note...')}
                               value={row.notes || ''}
+                              rows={2}
                               onChange={e => updateRow(row.id, 'notes', e.target.value)}
-                              style={{ fontSize: '0.75rem', background: 'transparent', textAlign: 'left' }}
+                              style={{ 
+                                fontSize: '0.8rem', 
+                                background: 'transparent', 
+                                textAlign: 'left', 
+                                resize: 'none',
+                                lineHeight: '1.2',
+                                paddingTop: '0.25rem'
+                              }}
                             />
                         </div>
                     </div>
@@ -430,14 +437,14 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                 <Plus size={16} /> {t('add_exercise', 'Add Exercise')}
               </button>
 
-              <div className="form-section" style={{ marginTop: '1.5rem', textAlign: 'left' }}>
+              <div className="form-section" style={{ marginTop: '1.25rem', textAlign: 'left' }}>
                 <textarea 
                   className="input-field" 
                   placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} 
-                  rows={2}
+                  rows={3}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  style={{ textTransform: 'uppercase', fontWeight: 'bold', textAlign: 'left' }}
+                  style={{ fontWeight: 'bold', textAlign: 'left' }}
                 />
               </div>
           </div>
