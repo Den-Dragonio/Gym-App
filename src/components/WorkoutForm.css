@@ -25,13 +25,13 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1.5rem; /* Reduced padding */
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--color-border);
   background: var(--color-bg-card);
 }
 
 .form-header h2 {
-  font-size: 1.25rem; /* Slightly smaller */
+  font-size: 1.25rem;
   margin: 0;
 }
 
@@ -43,12 +43,12 @@
 }
 
 .header-meta {
-  padding: 1rem 1.5rem; /* compacted */
+  padding: 1rem 1.5rem;
   background: var(--color-bg-card);
   border-bottom: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
-  gap: 0.75rem; /* compacted */
+  gap: 0.75rem;
 }
 
 .workout-title-row {
@@ -75,13 +75,13 @@
 .header-input {
   font-size: 1.25rem;
   font-weight: 600;
-  padding: 0.5rem; /* compacted */
+  padding: 0.5rem;
   width: 100%;
 }
 
 .supplements-section {
   display: flex;
-  align-items: center; /* row instead of column */
+  align-items: center;
   gap: 1rem;
 }
 
@@ -143,98 +143,61 @@
   color: var(--color-primary);
 }
 
-/* ================== TABLE LAYOUT ================== */
+/* ================== EXERCISE LIST (no table!) ================== */
 .table-scroll-area {
   flex: 1;
   overflow-y: auto;
-  overflow-x: auto;
-  padding: 1.5rem;
+  overflow-x: hidden; /* NO horizontal scroll */
+  padding: 1rem 1.5rem;
   -webkit-overflow-scrolling: touch;
 }
 
-.workout-table {
+/* Each exercise is a card */
+.exercise-card {
   display: flex;
   flex-direction: column;
-  min-width: 900px; /* Increased to accommodate extra notes column */
-}
-
-.table-row {
-  display: flex;
-  align-items: flex-start; /* top align because sets wrap */
   gap: 0.5rem;
-  padding: 0.5rem 0; /* more compact */
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid var(--color-border);
 }
-
-.table-row:last-child {
+.exercise-card:last-child {
   border-bottom: none;
 }
 
-.table-head {
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  font-size: 0.875rem;
-  padding-bottom: 0.5rem;
+/* Top row: circuit btn + exercise name + delete btn */
+.exercise-card-header {
+  display: flex;
   align-items: center;
+  gap: 0.5rem;
 }
 
-/* Columns */
-.cell { display: flex; align-items: center; justify-content: flex-start; }
-.col-circ { flex: 0 0 30px; justify-content: center; }
-.col-ex { flex: 0 1 350px; min-width: 150px; justify-content: flex-start; } 
-.col-sets-container { flex: 0 0 auto; margin: 0 1rem; justify-content: center; }
-.col-notes { flex: 1; min-width: 150px; justify-content: flex-start; }
-.col-actions { flex: 0 0 40px; justify-content: flex-end; }
-
-.circuit-btn {
-  color: var(--color-text-tertiary);
-  padding: 0.25rem;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s;
-}
-.circuit-btn.active {
-  color: var(--color-streak-plan);
-  background-color: rgba(6, 182, 212, 0.1);
+.exercise-card-header .exercise-name-input {
+  flex: 1;
+  font-weight: 600;
+  font-size: 1rem;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
 }
 
-/* Inputs inside table */
-.minimal {
-  border: 1px solid transparent;
-  background-color: var(--color-bg-input);
-  width: 100%;
-  border-radius: var(--radius-sm);
-}
-.minimal:focus {
-  border: 1px solid var(--color-primary);
-}
-
-/* Hide Number Arrows */
-input[type=number]::-webkit-inner-spin-button, 
-input[type=number]::-webkit-outer-spin-button { 
-  -webkit-appearance: none; 
-  margin: 0; 
-}
-input[type=number] {
-  -moz-appearance: textfield;
-}
-
-.sets-row {
+/* Sets flow: wrapping row of compact set boxes */
+.exercise-sets-row {
   display: flex;
   gap: 0.5rem;
   align-items: flex-start;
-  flex-wrap: wrap; /* allow wrap if too many sets to prevent horizontal scroll */
+  flex-wrap: wrap;
 }
 
+/* Each set box: snug around content */
 .set-box {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0; /* remove gap to compact */
+  gap: 0;
   border: 1px solid var(--color-border);
-  padding: 0.25rem 0.5rem; /* compacted */
+  padding: 0.25rem 0.5rem;
   border-radius: var(--radius-sm);
   background-color: var(--color-bg-card);
-  min-width: max-content;
+  width: fit-content;
   position: relative;
 }
 
@@ -243,7 +206,7 @@ input[type=number] {
   color: var(--color-text-tertiary);
   font-weight: 700;
   align-self: flex-start;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.15rem;
 }
 
 .set-inputs {
@@ -252,14 +215,20 @@ input[type=number] {
   gap: 0.25rem;
 }
 
+/* Weight and reps inputs: size to content */
 .weight-input, .reps-input {
-  min-width: 45px;
-  width: auto;
+  width: 50px;
   text-align: center;
-  padding: 0.15rem 0.25rem;
+  padding: 0.15rem 0.2rem;
   font-size: 1rem;
   font-weight: 600;
   background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+}
+.weight-input:focus, .reps-input:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-input);
 }
 
 .set-divider {
@@ -270,21 +239,22 @@ input[type=number] {
 .rir-select {
   background: transparent;
   border: none;
-  font-size: 0.7rem; /* compact */
+  font-size: 0.7rem;
   color: inherit;
   outline: none;
   cursor: pointer;
   margin-top: 0.15rem;
   width: 100%;
+  text-align: center;
 }
 
-/* RIR Backgrounds based on class */
+/* RIR colors */
 .rir-white { background-color: var(--color-bg-card); }
 .rir-red, .rir-red0 { background-color: rgba(239, 68, 68, 0.2); border-color: var(--color-danger); }
 .rir-green { background-color: rgba(16, 185, 129, 0.2); border-color: var(--color-success); }
 .rir-cheating { background-color: rgba(245, 158, 11, 0.2); border-color: #f59e0b; }
 .rir-approx { background-color: rgba(148, 163, 184, 0.2); border-color: #94a3b8; }
-.rir-redNeg { background-color: rgba(168, 85, 247, 0.2); border-color: #a855f7; } /* Orange warning cheating */
+.rir-redNeg { background-color: rgba(168, 85, 247, 0.2); border-color: #a855f7; }
 
 [data-theme="dark"] .rir-red,
 [data-theme="dark"] .rir-green,
@@ -296,6 +266,9 @@ input[type=number] {
   font-weight: 900;
   color: var(--color-text-tertiary);
   font-size: 1.1rem;
+  width: 50px;
+  text-align: center;
+  display: inline-block;
 }
 
 .del-set {
@@ -322,9 +295,32 @@ input[type=number] {
   font-weight: bold;
   flex-shrink: 0;
   cursor: pointer;
-  margin-top: 1.25rem; /* align with inputs visually */
+  margin-top: 1rem;
 }
 .add-set-mini:hover { opacity: 0.8; }
+
+/* Exercise note: inline, compact */
+.exercise-note-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 2rem; /* indent under name */
+}
+
+.exercise-note-input {
+  flex: 1;
+  font-size: 0.8rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  padding: 0.25rem 0.5rem;
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+.exercise-note-input:focus {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-input);
+}
 
 .add-row-main {
   width: 100%;
@@ -332,11 +328,54 @@ input[type=number] {
   border-style: dashed;
 }
 
+/* Bottom notes: full width */
+.session-notes-wrapper {
+  margin-top: 1rem;
+  width: 100%;
+}
+
+.session-notes-wrapper textarea {
+  width: 100%;
+  box-sizing: border-box;
+}
+
 .form-footer {
-  padding: 1rem 1.5rem; /* compacted */
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--color-border);
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
   background: var(--color-bg-card);
+}
+
+.circuit-btn {
+  color: var(--color-text-tertiary);
+  padding: 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s;
+}
+.circuit-btn.active {
+  color: var(--color-streak-plan);
+  background-color: rgba(6, 182, 212, 0.1);
+}
+
+/* Minimal base for inputs */
+.minimal {
+  border: 1px solid transparent;
+  background-color: var(--color-bg-input);
+  width: 100%;
+  border-radius: var(--radius-sm);
+}
+.minimal:focus {
+  border: 1px solid var(--color-primary);
+}
+
+/* Hide number arrows */
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+input[type=number] {
+  -moz-appearance: textfield;
 }

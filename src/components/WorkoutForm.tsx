@@ -45,7 +45,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
   const [workoutName, setWorkoutName] = useState(initialData?.type || '');
   const [bodyWeight, setBodyWeight] = useState(initialData?.bodyWeight || '');
   const [showWorkoutDropdown, setShowWorkoutDropdown] = useState(false);
-  const [durationStr, setDurationStr] = useState(initialData?.duration || '60'); 
+  const [durationStr, setDurationStr] = useState(initialData?.duration || ''); 
   const [notes, setNotes] = useState(initialData?.notes || '');
   
   const [selectedSupplements, setSelectedSupplements] = useState<string[]>(initialData?.supplements || []);
@@ -251,6 +251,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                       type="number" 
                       className="minimal" 
                       style={{width: '60px', background: 'transparent', textAlign: 'center', fontSize: '1.25rem', fontWeight: 'bold'}} 
+                      placeholder="—"
                       value={durationStr} 
                       onChange={e => setDurationStr(e.target.value)} 
                     />
@@ -299,152 +300,126 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
           </div>
 
           <div className="table-scroll-area">
-              <div className="workout-table">
-                <div className="table-row table-head">
-                  <div className="cell col-circ" title="Link to previous (Circuit)"></div>
-                  <div className="cell col-ex">{t('exercise', 'Exercise')}</div>
-                  <div className="cell col-sets-container">{t('sets', 'Sets (Weight × Reps)')}</div>
-                  <div className="cell col-notes" style={{ paddingLeft: '1rem' }}>{t('notes', 'Notes')}</div>
-                  <div className="cell col-actions"></div>
-                </div>
-
-                {rows.map((row, index) => (
-                  <div key={row.id} className="table-row">
-                    <div className="cell col-circ">
-                      {index > 0 && (
-                        <button 
-                           className={`circuit-btn ${row.isCircuit ? 'active' : ''}`} 
-                           onClick={() => updateRow(row.id, 'isCircuit', !row.isCircuit)}
-                           title="Join as Super-Set / Circuit with previous"
-                        >
-                          {row.isCircuit ? <Link size={16} /> : <Unlink size={16} color="var(--color-text-tertiary)" />}
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="cell col-ex" style={{position: 'relative'}}>
-                      <input 
-                        type="text" 
-                        className="input-field minimal cell-input" 
-                        placeholder={t('exercise_name', 'Bench Press...')}
-                        value={row.name}
-                        onFocus={() => setFocusedExerciseRow(row.id)}
-                        onBlur={() => setTimeout(() => setFocusedExerciseRow(null), 200)}
-                        onChange={e => updateRow(row.id, 'name', e.target.value)}
-                        style={{ fontWeight: 600, textAlign: 'left' }}
-                      />
-                      {focusedExerciseRow === row.id && (
-                        <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '45px', left: 0, zIndex: 50, width: '100%'}}>
-                          {MOCK_EXERCISES.filter(ex => ex.toLowerCase().includes(row.name.toLowerCase())).map(ex => (
-                            <div key={ex} className="autocomplete-item" onClick={() => updateRow(row.id, 'name', ex)}>
-                              {ex}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="cell col-sets-container">
-                      <div className="sets-row">
-                        {row.sets.map((set, sIdx) => {
-                          const prevSet = sIdx > 0 ? row.sets[sIdx - 1] : null;
-                          const wIdentical = prevSet && prevSet.weight && set.weight === prevSet.weight;
-                          const rIdentical = prevSet && prevSet.reps && set.reps === prevSet.reps;
-                          
-                          return (
-                          <div key={set.id} className={`set-box rir-${set.rirColor}`}>
-                            <span className="set-label">S{sIdx+1}</span>
-                            <div className="set-inputs">
-                              {wIdentical ? (
-                                <span className="weight-input identical-placeholder">==</span>
-                              ) : (
-                                <input 
-                                  type="text" 
-                                  className="input-field minimal weight-input" 
-                                  placeholder={unit}
-                                  value={set.weight}
-                                  onChange={(e) => updateSet(row.id, set.id, 'weight', e.target.value)}
-                                  title="Weight"
-                                />
-                              )}
-                              
-                              <span className="set-divider">×</span>
-                              
-                              {wIdentical && rIdentical ? (
-                                <span className="reps-input identical-placeholder">==</span>
-                              ) : (
-                                <input 
-                                  type="text" 
-                                  className="input-field minimal reps-input" 
-                                  placeholder="rps"
-                                  value={set.reps}
-                                  onChange={(e) => updateSet(row.id, set.id, 'reps', e.target.value)}
-                                  title="Reps"
-                                />
-                              )}
-                            </div>
-                            <select 
-                              className="rir-select"
-                              value={set.rirColor}
-                              onChange={(e) => updateSet(row.id, set.id, 'rirColor', e.target.value as RirColor)}
-                              style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400, textAlign: 'center' }}
-                            >
-                              <option value="white">⚪️ RIR</option>
-                              <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
-                              <option value="green">🟢 2-3</option>
-                              <option value="red0">🔴 F0 ({t('fail', 'Fail')})</option>
-                              <option value="redNeg">🟣 F-1 ({t('beyond', 'Beyond')})</option>
-                              <option value="cheating">🟠 CHT ({t('cheat', 'Cheat')})</option>
-                            </select>
-                            <button className="del-set" onClick={() => removeSetFromRow(row.id, set.id)}>&times;</button>
-                          </div>
-                        )})}
-                        <button className="add-set-mini" onClick={() => addSetToRow(row.id)} title="Add Set">+</button>
-                      </div>
-                    </div>
-
-                    <div className="cell col-notes" style={{ paddingLeft: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.5rem', opacity: row.notes ? 1 : 0.4, width: '100%' }}>
-                            <MessageSquare size={14} color="var(--color-primary)" style={{ marginTop: '0.5rem' }} />
-                            <textarea 
-                              className="minimal" 
-                              placeholder={t('ex_notes', 'Note...')}
-                              value={row.notes || ''}
-                              rows={2}
-                              onChange={e => updateRow(row.id, 'notes', e.target.value)}
-                              style={{ 
-                                fontSize: '0.8rem', 
-                                background: 'transparent', 
-                                textAlign: 'left', 
-                                resize: 'none',
-                                lineHeight: '1.2',
-                                paddingTop: '0.25rem'
-                              }}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="cell col-actions">
-                      <button className="icon-btn del-row-btn" onClick={() => removeRow(row.id)} style={{marginTop: '0.5rem'}}>
-                        <Trash2 size={16}/>
+              {rows.map((row, index) => (
+                <div key={row.id} className="exercise-card">
+                  {/* Row 1: Circuit + Exercise Name + Delete */}
+                  <div className="exercise-card-header" style={{ position: 'relative' }}>
+                    {index > 0 ? (
+                      <button 
+                         className={`circuit-btn ${row.isCircuit ? 'active' : ''}`} 
+                         onClick={() => updateRow(row.id, 'isCircuit', !row.isCircuit)}
+                         title="Super-Set"
+                      >
+                        {row.isCircuit ? <Link size={16} /> : <Unlink size={16} color="var(--color-text-tertiary)" />}
                       </button>
-                    </div>
+                    ) : <div style={{ width: 24 }} />}
+
+                    <input 
+                      type="text" 
+                      className="input-field minimal exercise-name-input" 
+                      placeholder={t('exercise_name', 'Exercise name...')}
+                      value={row.name}
+                      onFocus={() => setFocusedExerciseRow(row.id)}
+                      onBlur={() => setTimeout(() => setFocusedExerciseRow(null), 200)}
+                      onChange={e => updateRow(row.id, 'name', e.target.value)}
+                    />
+                    <button className="icon-btn" onClick={() => removeRow(row.id)} style={{ color: 'var(--color-text-tertiary)' }}>
+                      <Trash2 size={16}/>
+                    </button>
+
+                    {focusedExerciseRow === row.id && (
+                      <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '42px', left: '2rem', zIndex: 50, width: 'calc(100% - 5rem)'}}>
+                        {MOCK_EXERCISES.filter(ex => ex.toLowerCase().includes(row.name.toLowerCase())).map(ex => (
+                          <div key={ex} className="autocomplete-item" onClick={() => updateRow(row.id, 'name', ex)}>
+                            {ex}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
-                ))}
-              </div>
+
+                  {/* Row 2: Sets */}
+                  <div className="exercise-sets-row" style={{ paddingLeft: '2rem' }}>
+                    {row.sets.map((set, sIdx) => {
+                      const prevSet = sIdx > 0 ? row.sets[sIdx - 1] : null;
+                      const wIdentical = prevSet && prevSet.weight && set.weight === prevSet.weight;
+                      const rIdentical = prevSet && prevSet.reps && set.reps === prevSet.reps;
+                      
+                      return (
+                      <div key={set.id} className={`set-box rir-${set.rirColor}`}>
+                        <span className="set-label">S{sIdx+1}</span>
+                        <div className="set-inputs">
+                          {wIdentical ? (
+                            <span className="identical-placeholder">==</span>
+                          ) : (
+                            <input 
+                              type="text" 
+                              className="weight-input" 
+                              placeholder={unit}
+                              value={set.weight}
+                              onChange={(e) => updateSet(row.id, set.id, 'weight', e.target.value)}
+                            />
+                          )}
+                          
+                          <span className="set-divider">×</span>
+                          
+                          {wIdentical && rIdentical ? (
+                            <span className="identical-placeholder">==</span>
+                          ) : (
+                            <input 
+                              type="text" 
+                              className="reps-input" 
+                              placeholder="rps"
+                              value={set.reps}
+                              onChange={(e) => updateSet(row.id, set.id, 'reps', e.target.value)}
+                            />
+                          )}
+                        </div>
+                        <select 
+                          className="rir-select"
+                          value={set.rirColor}
+                          onChange={(e) => updateSet(row.id, set.id, 'rirColor', e.target.value as RirColor)}
+                          style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}
+                        >
+                          <option value="white">⚪️ RIR</option>
+                          <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
+                          <option value="green">🟢 2-3</option>
+                          <option value="red0">🔴 F0 ({t('fail', 'Fail')})</option>
+                          <option value="redNeg">🟣 F-1 ({t('beyond', 'Beyond')})</option>
+                          <option value="cheating">🟠 CHT ({t('cheat', 'Cheat')})</option>
+                        </select>
+                        <button className="del-set" onClick={() => removeSetFromRow(row.id, set.id)}>&times;</button>
+                      </div>
+                    )})}
+                    <button className="add-set-mini" onClick={() => addSetToRow(row.id)} title="Add Set">+</button>
+                  </div>
+
+                  {/* Row 3: Exercise note */}
+                  <div className="exercise-note-row" style={{ opacity: row.notes ? 1 : 0.5 }}>
+                    <MessageSquare size={14} color="var(--color-primary)" />
+                    <input 
+                      type="text" 
+                      className="exercise-note-input" 
+                      placeholder={t('ex_notes', 'Note about this exercise...')}
+                      value={row.notes || ''}
+                      onChange={e => updateRow(row.id, 'notes', e.target.value)}
+                    />
+                  </div>
+                </div>
+              ))}
               
               <button className="btn-secondary add-row-main" onClick={addRow}>
                 <Plus size={16} /> {t('add_exercise', 'Add Exercise')}
               </button>
 
-              <div className="form-section" style={{ marginTop: '1.25rem', textAlign: 'left' }}>
+              <div className="session-notes-wrapper">
                 <textarea 
                   className="input-field" 
                   placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} 
                   rows={3}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
-                  style={{ fontWeight: 'bold', textAlign: 'left' }}
+                  style={{ fontWeight: 'bold', textAlign: 'left', width: '100%' }}
                 />
               </div>
           </div>
@@ -453,7 +428,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
         <div className="form-footer">
           <button className="btn-secondary" onClick={onClose}>{t('cancel', 'Cancel')}</button>
           <button className="btn-primary flex-center" onClick={handleSave}>
-            <CheckCircle2 size={18} /> {initialData ? t('update_workout', 'Update Success') : t('save_workout', 'Finish Workout')}
+            <CheckCircle2 size={18} /> {initialData ? t('update_workout', 'Update Workout') : t('save_workout', 'Finish Workout')}
           </button>
         </div>
       </div>
