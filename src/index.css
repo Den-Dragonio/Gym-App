@@ -63,6 +63,30 @@
 }
 
 /* ======================
+   ACCENT: GREEN
+   ====================== */
+[data-accent="green"] {
+  --color-primary: #10b981;
+  --color-primary-hover: #059669;
+}
+[data-theme="dark"][data-accent="green"] {
+  --color-primary: #34d399;
+  --color-primary-hover: #10b981;
+}
+
+/* ======================
+   ACCENT: PURPLE
+   ====================== */
+[data-accent="purple"] {
+  --color-primary: #8b5cf6;
+  --color-primary-hover: #7c3aed;
+}
+[data-theme="dark"][data-accent="purple"] {
+  --color-primary: #a78bfa;
+  --color-primary-hover: #8b5cf6;
+}
+
+/* ======================
    BASE STYLES
    ====================== */
 * {

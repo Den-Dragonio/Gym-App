@@ -33,8 +33,11 @@ export interface AppUser {
   createdAt?: string;
   gyms?: any[];
   theme?: 'light' | 'dark' | 'system';
+  accent?: 'blue' | 'green' | 'purple';
   measurementSystem?: 'metric' | 'imperial';
   language?: 'en' | 'ru';
+  dateFormat?: 'dd/mm/yyyy' | 'mm/dd/yyyy';
+  exerciseNames?: string[];
 }
 
 interface AuthContextType {

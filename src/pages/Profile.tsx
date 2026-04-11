@@ -47,7 +47,7 @@ export const Profile = () => {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { currentUser, logout, deleteAccount } = useAuth();
-  const { theme, setTheme, system, setSystem } = useSettings();
+  const { theme, setTheme, accent, setAccent, system, setSystem, dateFormat, setDateFormat } = useSettings();
 
   const isOwner = !uid || uid === currentUser?.uid;
   const targetUid = uid || currentUser?.uid;
@@ -89,6 +89,7 @@ export const Profile = () => {
   
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const displayUser = isOwner ? currentUser : visitedUser;
 
@@ -149,34 +150,26 @@ export const Profile = () => {
             bio, avatarUrl, avatarPosition, email, showEmail, gender, weight, height, 
             benchPress, squat, deadlift, gyms, daysPlan, supplements, workoutNames, exerciseNames,
             theme,
+            accent,
             measurementSystem: system,
+            dateFormat,
         });
         setIsEditing(false);
     } catch (e) {
-        alert("Failed to save profile");
+        console.error('Failed to save profile', e);
     } finally {
         setIsSaving(false);
     }
   };
 
   const handleDeleteAccount = async () => {
-    const confirmation1 = window.confirm(t('delete_account_confirm1', "Are you absolutely sure you want to PERMANENTLY delete your account? All your workout history and social data will be lost forever."));
-    if (!confirmation1) return;
-
-    const confirmation2 = window.confirm(t('delete_account_confirm2', "This action CANNOT be undone. Proceed with deletion?"));
-    if (!confirmation2) return;
-
     try {
         await deleteAccount();
-        alert(t('account_deleted', "Your account has been successfully deleted."));
         navigate('/register');
     } catch (error: any) {
-        if (error.message === "REAUTH_REQUIRED") {
-            alert(t('reauth_required', "For security reasons, please log out and log back in before deleting your account."));
-        } else {
-            alert(t('delete_failed', "Failed to delete account. Please try again later."));
-        }
+        console.error('Delete account failed', error);
     }
+    setShowDeleteModal(false);
   };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -190,18 +183,16 @@ export const Profile = () => {
     }
   };
 
+
   const handleBlockUser = async () => {
       if (!currentUser?.uid || !uid) return;
-      if (window.confirm("Are you sure you want to block this user?")) {
-          const docId = `block_${currentUser.uid}_${uid}`;
-          await setDoc(doc(db, 'blocks', docId), {
-              blockerId: currentUser.uid,
-              blockedId: uid,
-              timestamp: new Date().toISOString()
-          });
-          alert("User blocked");
-          navigate('/social');
-      }
+      const docId = `block_${currentUser.uid}_${uid}`;
+      await setDoc(doc(db, 'blocks', docId), {
+          blockerId: currentUser.uid,
+          blockedId: uid,
+          timestamp: new Date().toISOString()
+      });
+      navigate('/social');
   };
 
   const addSupp = () => {
@@ -496,17 +487,67 @@ export const Profile = () => {
             </div>
             <div>
                <label className="label">{t('theme', 'Theme')}</label>
-               <select className="input-field" value={theme} onChange={e => setTheme(e.target.value as any)}>
-                  <option value="light">{t('theme_light', 'Light')}</option>
-                  <option value="dark">{t('theme_dark', 'Dark')}</option>
-                  <option value="system">{t('theme_system', 'System (OS)')}</option>
+               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+                 {([
+                   { value: 'light', label: '☀️ Light', gradient: 'linear-gradient(135deg, #f0f2f5 50%, #ffffff 50%)' },
+                   { value: 'dark', label: '🌙 Dark', gradient: 'linear-gradient(135deg, #0f172a 50%, #1e293b 50%)' },
+                   { value: 'system', label: '🖥 Auto', gradient: 'linear-gradient(135deg, #f0f2f5 25%, #ffffff 25%, #ffffff 50%, #0f172a 50%, #0f172a 75%, #1e293b 75%)' }
+                 ] as const).map(opt => (
+                   <button
+                     key={opt.value}
+                     onClick={() => setTheme(opt.value as any)}
+                     style={{
+                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                       padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                       border: theme === opt.value ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+                       background: 'transparent', cursor: 'pointer', transition: 'all 0.2s'
+                     }}
+                   >
+                     <div style={{ width: 48, height: 32, borderRadius: 'var(--radius-sm)', background: opt.gradient, border: '1px solid var(--color-border)' }} />
+                     <span style={{ fontSize: '0.7rem', fontWeight: theme === opt.value ? 700 : 400 }}>{opt.label}</span>
+                   </button>
+                 ))}
+               </div>
+            </div>
+
+            <div>
+               <label className="label">{t('accent', 'Accent Color')}</label>
+               <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                 {([
+                   { value: 'blue', colors: ['#3b82f6', '#60a5fa'] },
+                   { value: 'green', colors: ['#10b981', '#34d399'] },
+                   { value: 'purple', colors: ['#8b5cf6', '#a78bfa'] },
+                 ] as const).map(opt => (
+                   <button
+                     key={opt.value}
+                     onClick={() => setAccent(opt.value as any)}
+                     style={{
+                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                       padding: '0.5rem', borderRadius: 'var(--radius-md)',
+                       border: accent === opt.value ? '2px solid var(--color-primary)' : '2px solid var(--color-border)',
+                       background: 'transparent', cursor: 'pointer', transition: 'all 0.2s'
+                     }}
+                   >
+                     <div style={{ width: 48, height: 32, borderRadius: 'var(--radius-sm)', background: `linear-gradient(135deg, ${opt.colors[0]} 50%, ${opt.colors[1]} 50%)` }} />
+                     <span style={{ fontSize: '0.7rem', fontWeight: accent === opt.value ? 700 : 400, textTransform: 'capitalize' }}>{opt.value}</span>
+                   </button>
+                 ))}
+               </div>
+            </div>
+
+            <div>
+               <label className="label">{t('date_format', 'Date Format')}</label>
+               <select className="input-field" value={dateFormat} onChange={e => setDateFormat(e.target.value as any)}>
+                  <option value="dd/mm/yyyy">DD.MM.YYYY</option>
+                  <option value="mm/dd/yyyy">MM/DD/YYYY</option>
                </select>
             </div>
+
             <div>
-               <label className="label">{t('system', 'System')}</label>
+               <label className="label">{t('system', 'Units')}</label>
                <select className="input-field" value={system} onChange={e => setSystem(e.target.value as any)}>
-                  <option value="metric">{t('metric', 'Metric')}</option>
-                  <option value="imperial">{t('imperial', 'Imperial')}</option>
+                  <option value="metric">{t('metric', 'Metric (kg)')}</option>
+                  <option value="imperial">{t('imperial', 'Imperial (lbs)')}</option>
                </select>
             </div>
           </div>
@@ -526,11 +567,30 @@ export const Profile = () => {
               <button 
                   className="btn-secondary" 
                   style={{ backgroundColor: 'var(--color-danger)', color: 'white', borderColor: 'var(--color-danger)', fontSize: '0.875rem' }}
-                  onClick={handleDeleteAccount}
+                  onClick={() => setShowDeleteModal(true)}
               >
                   {t('delete_account', 'Delete My Account')}
               </button>
           </div>
+
+          {/* Delete Account Modal */}
+          {showDeleteModal && (
+            <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000 }}>
+              <div className="card glass" style={{ padding: '2rem', maxWidth: '400px', textAlign: 'center' }}>
+                <AlertTriangle size={40} color="var(--color-danger)" style={{ marginBottom: '1rem' }} />
+                <h3 style={{ color: 'var(--color-danger)', marginBottom: '0.5rem' }}>{t('delete_account_confirm_title', 'Delete Account?')}</h3>
+                <p style={{ fontSize: '0.85rem', color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+                  {t('delete_account_confirm1', 'This will PERMANENTLY delete your account. All your workout history and social data will be lost forever. This cannot be undone.')}
+                </p>
+                <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
+                  <button className="btn-secondary" onClick={() => setShowDeleteModal(false)}>{t('cancel', 'Cancel')}</button>
+                  <button className="btn-secondary" style={{ backgroundColor: 'var(--color-danger)', color: 'white', borderColor: 'var(--color-danger)' }} onClick={handleDeleteAccount}>
+                    {t('delete_confirm', 'Yes, Delete')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -316,13 +316,75 @@
   color: var(--color-text-secondary);
   transition: all 0.2s;
 }
-.swap-btn:hover { border-color: var(--color-primary); color: var(--color-primary); background: rgba(99, 102, 241, 0.1); }
-.drop-btn:hover { border-color: var(--color-danger); color: var(--color-danger); background: rgba(239, 68, 68, 0.1); }
+.action-btn-mini:disabled { opacity: 0.3; cursor: not-allowed; }
+.swap-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); background: rgba(99, 102, 241, 0.1); }
+.drop-btn:hover:not(:disabled) { border-color: var(--color-danger); color: var(--color-danger); background: rgba(239, 68, 68, 0.1); }
+.drop-btn.drop-active { border-color: var(--color-danger); color: white; background: var(--color-danger); }
+
+/* Drop marker */
+.drop-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: var(--color-danger);
+  font-weight: 900;
+  font-size: 1.1rem;
+  margin-top: 1rem;
+}
 
 /* Dropped exercise visual */
 .exercise-dropped {
   opacity: 0.6;
   border-left: 3px solid var(--color-danger);
+}
+
+/* Swap child exercise rows */
+.swap-child-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--color-border);
+  margin-top: 0.5rem;
+}
+
+.swap-arrow-line {
+  display: flex;
+  align-items: center;
+  padding-top: 0.5rem;
+  flex-shrink: 0;
+}
+
+.swap-child-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.swap-child-content .exercise-card-header {
+  gap: 0.4rem;
+}
+
+.swap-child-content .exercise-name-input {
+  font-size: 0.9rem;
+}
+
+.swap-child-content .exercise-sets-row {
+  padding-left: 0;
+}
+
+.swap-child-content .set-box {
+  padding: 0.2rem 0.4rem;
+}
+
+.swap-child-content .weight-input,
+.swap-child-content .reps-input {
+  width: 42px;
+  font-size: 0.9rem;
 }
 
 /* Exercise note: inline, compact */

@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Plus, Trash2, CheckCircle2, ChevronDown, Link, Unlink, Clock, MessageSquare,
-  ArrowRight, XCircle
+  ArrowRight, X
 } from 'lucide-react';
 import './WorkoutForm.css';
 import { useAuth } from '../contexts/AuthContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { getUserDocument, updateWorkout } from '../firebase/db';
@@ -29,9 +30,8 @@ interface ExerciseRow {
   isCircuit: boolean; 
   sets: SetDetails[];
   notes?: string;
-  swappedTo?: string;
   dropped?: boolean;
-  droppedReason?: string;
+  children?: ExerciseRow[]; // swapped exercises (max 5 deep)
 }
 
 interface WorkoutFormProps {
@@ -41,9 +41,16 @@ interface WorkoutFormProps {
   onSuccess?: (workout: any) => void;
 }
 
+const makeEmptySets = (prefix: string): SetDetails[] => [
+  { id: `${prefix}-1`, weight: '', reps: '', rirColor: 'white' as RirColor },
+  { id: `${prefix}-2`, weight: '', reps: '', rirColor: 'white' as RirColor },
+  { id: `${prefix}-3`, weight: '', reps: '', rirColor: 'white' as RirColor }
+];
+
 export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFormProps) => {
   const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
+  const { formatDate } = useSettings();
   const unit = i18n.language === 'uk' ? 'кг' : 'kg';
   
   const [workoutName, setWorkoutName] = useState(initialData?.type || '');
@@ -78,7 +85,6 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
   const [rows, setRows] = useState<ExerciseRow[]>(() => {
     if (initialData?.exercises) return initialData.exercises;
-
     const initialRows: ExerciseRow[] = [];
     for (let i = 0; i < 5; i++) {
         initialRows.push({
@@ -86,38 +92,28 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
             name: '',
             isCircuit: false,
             notes: '',
-            sets: [
-                { id: `set-${i}-1`, weight: '', reps: '', rirColor: 'white' as RirColor },
-                { id: `set-${i}-2`, weight: '', reps: '', rirColor: 'white' as RirColor },
-                { id: `set-${i}-3`, weight: '', reps: '', rirColor: 'white' as RirColor }
-            ]
+            sets: makeEmptySets(`set-${i}`)
         });
     }
     return initialRows;
   });
 
-  const handleKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    }
-  };
-
   useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   const addRow = () => {
+    const id = Date.now().toString();
     setRows([...rows, {
-      id: Date.now().toString(),
+      id,
       name: '',
       isCircuit: false,
       notes: '',
-      sets: [
-        { id: `s1-${Date.now()}`, weight: '', reps: '', rirColor: 'white' as RirColor },
-        { id: `s2-${Date.now()}`, weight: '', reps: '', rirColor: 'white' as RirColor },
-        { id: `s3-${Date.now()}`, weight: '', reps: '', rirColor: 'white' as RirColor }
-      ]
+      sets: makeEmptySets(`s-${id}`)
     }]);
   };
 
@@ -129,37 +125,122 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     setRows(rows.map(r => r.id === rowId ? { ...r, [field]: value } : r));
   };
 
-  const swapExercise = (rowId: string) => {
-    const newName = prompt(t('swap_prompt', 'What exercise did you switch to?'));
-    if (newName) {
-      setRows(rows.map(r => r.id === rowId ? { ...r, swappedTo: newName } : r));
-    }
+  // --- Drop: simple toggle ---
+  const toggleDrop = (rowId: string) => {
+    setRows(rows.map(r => r.id === rowId ? { ...r, dropped: !r.dropped } : r));
   };
 
-  const dropExercise = (rowId: string) => {
-    const reason = prompt(t('drop_prompt', 'Why did you drop this exercise? (e.g. injury, equipment busy)'));
-    if (reason !== null) {
-      setRows(rows.map(r => r.id === rowId ? { ...r, dropped: true, droppedReason: reason } : r));
-    }
+  // --- Swap: add child exercise row (max 5 deep) ---
+  const getSwapDepth = (row: ExerciseRow): number => {
+    if (!row.children || row.children.length === 0) return 0;
+    return row.children.length;
+  };
+
+  const addSwap = (rowId: string) => {
+    setRows(rows.map(r => {
+      if (r.id === rowId) {
+        const depth = getSwapDepth(r);
+        if (depth >= 5) return r;
+        const childId = `swap-${rowId}-${Date.now()}`;
+        const newChild: ExerciseRow = {
+          id: childId,
+          name: '',
+          isCircuit: false,
+          notes: '',
+          sets: makeEmptySets(childId),
+        };
+        return { ...r, children: [...(r.children || []), newChild] };
+      }
+      return r;
+    }));
+  };
+
+  const updateChild = (parentId: string, childId: string, field: string, value: any) => {
+    setRows(rows.map(r => {
+      if (r.id === parentId && r.children) {
+        return {
+          ...r,
+          children: r.children.map(c => c.id === childId ? { ...c, [field]: value } : c)
+        };
+      }
+      return r;
+    }));
+  };
+
+  const removeChild = (parentId: string, childId: string) => {
+    setRows(rows.map(r => {
+      if (r.id === parentId && r.children) {
+        return { ...r, children: r.children.filter(c => c.id !== childId) };
+      }
+      return r;
+    }));
+  };
+
+  const updateChildSet = (parentId: string, childId: string, setId: string, field: string, value: string) => {
+    let finalValue = value;
+    if (field === 'weight') finalValue = validateWeight(value);
+    setRows(rows.map(r => {
+      if (r.id === parentId && r.children) {
+        return {
+          ...r,
+          children: r.children.map(c => {
+            if (c.id === childId) {
+              return { ...c, sets: c.sets.map(s => s.id === setId ? { ...s, [field]: finalValue } : s) };
+            }
+            return c;
+          })
+        };
+      }
+      return r;
+    }));
+  };
+
+  const addSetToChild = (parentId: string, childId: string) => {
+    setRows(rows.map(r => {
+      if (r.id === parentId && r.children) {
+        return {
+          ...r,
+          children: r.children.map(c => {
+            if (c.id === childId) {
+              const lastSet = c.sets[c.sets.length - 1];
+              return { ...c, sets: [...c.sets, { id: Date.now().toString(), weight: lastSet?.weight || '', reps: lastSet?.reps || '', rirColor: lastSet?.rirColor || 'white' as RirColor }] };
+            }
+            return c;
+          })
+        };
+      }
+      return r;
+    }));
+  };
+
+  const removeSetFromChild = (parentId: string, childId: string, setId: string) => {
+    setRows(rows.map(r => {
+      if (r.id === parentId && r.children) {
+        return {
+          ...r,
+          children: r.children.map(c => {
+            if (c.id === childId) {
+              if (c.sets.length <= 1) return c;
+              return { ...c, sets: c.sets.filter(s => s.id !== setId) };
+            }
+            return c;
+          })
+        };
+      }
+      return r;
+    }));
   };
 
   const validateWeight = (val: string) => {
-      // Allow only numbers, dots, and commas
       return val.replace(/[^0-9.,]/g, '');
   };
 
   const updateSet = (rowId: string, setId: string, field: 'weight' | 'reps' | 'rirColor', value: string) => {
     let finalValue = value;
-    if (field === 'weight') {
-        finalValue = validateWeight(value);
-    }
-
+    if (field === 'weight') finalValue = validateWeight(value);
     setRows(rows.map(r => {
       if (r.id === rowId) {
-        return {
-          ...r,
-          sets: r.sets.map(s => s.id === setId ? { ...s, [field]: finalValue } : s)
-        };
+        return { ...r, sets: r.sets.map(s => s.id === setId ? { ...s, [field]: finalValue } : s) };
       }
       return r;
     }));
@@ -169,15 +250,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     setRows(rows.map(r => {
       if (r.id === rowId) {
         const lastSet = r.sets[r.sets.length - 1];
-        return { 
-          ...r, 
-          sets: [...r.sets, { 
-            id: Date.now().toString(), 
-            weight: lastSet ? lastSet.weight : '', 
-            reps: lastSet ? lastSet.reps : '', 
-            rirColor: lastSet ? lastSet.rirColor : 'white' as RirColor 
-          }] 
-        };
+        return { ...r, sets: [...r.sets, { id: Date.now().toString(), weight: lastSet ? lastSet.weight : '', reps: lastSet ? lastSet.reps : '', rirColor: lastSet ? lastSet.rirColor : 'white' as RirColor }] };
       }
       return r;
     }));
@@ -224,16 +297,44 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
        onClose();
      } catch (err) {
        console.error(err);
-       alert('Error logging workout');
      }
   };
+
+  // Render RIR options (shared between main and child rows)
+  const renderRirOptions = () => (
+    <>
+      <option value="white">⚪️ RIR</option>
+      <option value="warmup">🔵 W ({t('warmup', 'Warmup')})</option>
+      <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
+      <option value="green">🟢 @ 2-3</option>
+      <option value="red0">🔴 & ({t('fail', 'Fail')})</option>
+      <option value="redNeg">🟣 && ({t('beyond', 'Beyond')})</option>
+      <option value="cheating">🟠 CHT ({t('cheat', 'Cheat')})</option>
+    </>
+  );
+
+  // Render a set box (shared)
+  const renderSetBox = (set: SetDetails, sIdx: number, onUpdate: (setId: string, field: string, value: string) => void, onRemove: (setId: string) => void) => (
+    <div key={set.id} className={`set-box rir-${set.rirColor}`}>
+      <span className="set-label">S{sIdx+1}</span>
+      <div className="set-inputs">
+        <input type="text" className="weight-input" placeholder={unit} value={set.weight} onChange={(e) => onUpdate(set.id, 'weight', e.target.value)} />
+        <span className="set-divider">×</span>
+        <input type="text" className="reps-input" placeholder="rps" value={set.reps} onChange={(e) => onUpdate(set.id, 'reps', e.target.value)} />
+      </div>
+      <select className="rir-select" value={set.rirColor} onChange={(e) => onUpdate(set.id, 'rirColor', e.target.value)} style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}>
+        {renderRirOptions()}
+      </select>
+      <button className="del-set" onClick={() => onRemove(set.id)}>&times;</button>
+    </div>
+  );
 
   return (
     <div className="workout-modal-overlay">
       <div className="workout-form card glass full-screen-modal">
         <div className="form-header">
           <div style={{display: 'flex', flexDirection: 'column'}}>
-             <span style={{ fontSize: '0.875rem', color: 'var(--color-primary)', fontWeight: 600 }}>{date.toLocaleDateString()}</span>
+             <span style={{ fontSize: '0.875rem', color: 'var(--color-primary)', fontWeight: 600 }}>{formatDate(date.toISOString())}</span>
              <h2>{initialData ? t('edit_workout', 'Edit Workout') : t('log_workout', 'Log Workout')}</h2>
           </div>
           <button className="icon-btn" onClick={onClose} style={{ transform: 'scale(1.2)' }}>&times;</button>
@@ -241,7 +342,6 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
         <div className="form-body no-scroll-wrapper">
           <div className="header-meta">
-              
             <div className="workout-title-row">
                 <div className="workout-title-container">
                 <input 
@@ -293,18 +393,13 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
             <div className="supplements-section" style={{ justifyContent: 'flex-start' }}>
               <div style={{ position: 'relative' }}>
-                <button 
-                  className="btn-secondary add-supp-btn"
-                  onClick={() => setSuppDropdownOpen(!suppDropdownOpen)}
-                >
+                <button className="btn-secondary add-supp-btn" onClick={() => setSuppDropdownOpen(!suppDropdownOpen)}>
                   + Supps <ChevronDown size={14} />
                 </button>
                 {suppDropdownOpen && (
                   <div className="supp-dropdown glass">
                     {userSupplements.filter(s => !selectedSupplements.includes(s)).map(supp => (
-                      <div key={supp} className="supp-item" onClick={() => toggleSupplement(supp)}>
-                        {supp}
-                      </div>
+                      <div key={supp} className="supp-item" onClick={() => toggleSupplement(supp)}>{supp}</div>
                     ))}
                   </div>
                 )}
@@ -351,88 +446,63 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                     {focusedExerciseRow === row.id && (
                       <div className="autocomplete-dropdown glass" style={{position: 'absolute', top: '42px', left: '2rem', zIndex: 50, width: 'calc(100% - 5rem)'}}>
                         {userExercises.filter(ex => ex.toLowerCase().includes(row.name.toLowerCase())).map(ex => (
-                          <div key={ex} className="autocomplete-item" onClick={() => updateRow(row.id, 'name', ex)}>
-                            {ex}
-                          </div>
+                          <div key={ex} className="autocomplete-item" onClick={() => updateRow(row.id, 'name', ex)}>{ex}</div>
                         ))}
                       </div>
                     )}
                   </div>
 
-                  {/* Swap indicator */}
-                  {row.swappedTo && (
-                    <div style={{ paddingLeft: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--color-primary)' }}>
-                      <ArrowRight size={14} /> {t('swapped_to', 'Switched to')}: <strong>{row.swappedTo}</strong>
-                      <button className="icon-btn" onClick={() => updateRow(row.id, 'swappedTo', undefined)} style={{ color: 'var(--color-text-tertiary)', padding: '0 0.25rem' }}>&times;</button>
-                    </div>
-                  )}
-
-                  {/* Drop indicator */}
-                  {row.dropped && (
-                    <div style={{ paddingLeft: '2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--color-danger)' }}>
-                      <XCircle size={14} /> {t('dropped', 'Dropped')}{row.droppedReason ? `: ${row.droppedReason}` : ''}
-                      <button className="icon-btn" onClick={() => { updateRow(row.id, 'dropped', false); updateRow(row.id, 'droppedReason', ''); }} style={{ color: 'var(--color-text-tertiary)', padding: '0 0.25rem' }}>&times;</button>
-                    </div>
-                  )}
-
                   {/* Row 2: Sets + action buttons */}
                   <div className="exercise-sets-row" style={{ paddingLeft: '2rem' }}>
-                    {row.sets.map((set, sIdx) => (
-                      <div key={set.id} className={`set-box rir-${set.rirColor}`}>
-                        <span className="set-label">S{sIdx+1}</span>
-                        <div className="set-inputs">
-                          <input 
-                            type="text" 
-                            className="weight-input" 
-                            placeholder={unit}
-                            value={set.weight}
-                            onChange={(e) => updateSet(row.id, set.id, 'weight', e.target.value)}
-                          />
-                          <span className="set-divider">×</span>
-                          <input 
-                            type="text" 
-                            className="reps-input" 
-                            placeholder="rps"
-                            value={set.reps}
-                            onChange={(e) => updateSet(row.id, set.id, 'reps', e.target.value)}
-                          />
-                        </div>
-                        <select 
-                          className="rir-select"
-                          value={set.rirColor}
-                          onChange={(e) => updateSet(row.id, set.id, 'rirColor', e.target.value as RirColor)}
-                          style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}
-                        >
-                          <option value="white">⚪️ RIR</option>
-                          <option value="warmup">🔵 W ({t('warmup', 'Warmup')})</option>
-                          <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
-                          <option value="green">🟢 2-3</option>
-                          <option value="red0">🔴 F0 ({t('fail', 'Fail')})</option>
-                          <option value="redNeg">🟣 F-1 ({t('beyond', 'Beyond')})</option>
-                          <option value="cheating">🟠 CHT ({t('cheat', 'Cheat')})</option>
-                        </select>
-                        <button className="del-set" onClick={() => removeSetFromRow(row.id, set.id)}>&times;</button>
-                      </div>
-                    ))}
+                    {row.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateSet(row.id, setId, field as any, value), (setId) => removeSetFromRow(row.id, setId)))}
+                    
+                    {/* Drop marker after last set */}
+                    {row.dropped && <span className="drop-marker" title={t('dropped', 'Dropped')}>✕</span>}
+                    
                     <button className="add-set-mini" onClick={() => addSetToRow(row.id)} title="Add Set">+</button>
-                    <button className="action-btn-mini swap-btn" onClick={() => swapExercise(row.id)} title={t('swap_exercise', 'Switch Exercise')}>
+                    <button className="action-btn-mini swap-btn" onClick={() => addSwap(row.id)} title={t('swap_exercise', 'Switch Exercise')} disabled={getSwapDepth(row) >= 5}>
                       <ArrowRight size={16} />
                     </button>
-                    <button className="action-btn-mini drop-btn" onClick={() => dropExercise(row.id)} title={t('drop_exercise', 'Drop Exercise')}>
-                      <XCircle size={16} />
+                    <button className={`action-btn-mini drop-btn ${row.dropped ? 'drop-active' : ''}`} onClick={() => toggleDrop(row.id)} title={t('drop_exercise', 'Drop Exercise')}>
+                      <X size={16} />
                     </button>
                   </div>
+
+                  {/* Swap children (indented sub-exercises) */}
+                  {row.children && row.children.map((child, cIdx) => (
+                    <div key={child.id} className="swap-child-row" style={{ marginLeft: `${Math.min(cIdx + 1, 3) * 1.5}rem` }}>
+                      <div className="swap-arrow-line">
+                        <ArrowRight size={14} color="var(--color-primary)" />
+                      </div>
+                      <div className="swap-child-content">
+                        <div className="exercise-card-header">
+                          <input 
+                            type="text" 
+                            className="input-field minimal exercise-name-input" 
+                            placeholder={t('new_exercise', 'New exercise...')}
+                            value={child.name}
+                            onChange={e => updateChild(row.id, child.id, 'name', e.target.value)}
+                          />
+                          <button className="icon-btn" onClick={() => removeChild(row.id, child.id)} style={{ color: 'var(--color-text-tertiary)' }}>
+                            <Trash2 size={14}/>
+                          </button>
+                        </div>
+                        <div className="exercise-sets-row">
+                          {child.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateChildSet(row.id, child.id, setId, field, value), (setId) => removeSetFromChild(row.id, child.id, setId)))}
+                          <button className="add-set-mini" onClick={() => addSetToChild(row.id, child.id)} title="Add Set">+</button>
+                        </div>
+                        <div className="exercise-note-row" style={{ opacity: child.notes ? 1 : 0.5, paddingLeft: 0 }}>
+                          <MessageSquare size={12} color="var(--color-primary)" />
+                          <input type="text" className="exercise-note-input" placeholder={t('ex_notes', 'Note...')} value={child.notes || ''} onChange={e => updateChild(row.id, child.id, 'notes', e.target.value)} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
 
                   {/* Row 3: Exercise note */}
                   <div className="exercise-note-row" style={{ opacity: row.notes ? 1 : 0.5 }}>
                     <MessageSquare size={14} color="var(--color-primary)" />
-                    <input 
-                      type="text" 
-                      className="exercise-note-input" 
-                      placeholder={t('ex_notes', 'Note about this exercise...')}
-                      value={row.notes || ''}
-                      onChange={e => updateRow(row.id, 'notes', e.target.value)}
-                    />
+                    <input type="text" className="exercise-note-input" placeholder={t('ex_notes', 'Note about this exercise...')} value={row.notes || ''} onChange={e => updateRow(row.id, 'notes', e.target.value)} />
                   </div>
                 </div>
               ))}
@@ -442,14 +512,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
               </button>
 
               <div className="session-notes-wrapper">
-                <textarea 
-                  className="input-field" 
-                  placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} 
-                  rows={3}
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  style={{ fontWeight: 'bold', textAlign: 'left', width: '100%' }}
-                />
+                <textarea className="input-field" placeholder={t('notes_placeholder', 'ЗАМЕТКИ')} rows={3} value={notes} onChange={e => setNotes(e.target.value)} style={{ fontWeight: 'bold', textAlign: 'left', width: '100%' }} />
               </div>
           </div>
         </div>
@@ -464,4 +527,3 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     </div>
   );
 };
-
