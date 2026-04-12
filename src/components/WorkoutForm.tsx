@@ -60,8 +60,20 @@ const getSetBoxBackground = (tags: RirTag[]) => {
   if (tags.length === 0) return 'var(--color-bg-card)';
   if (tags.length === 1) return TAG_COLOR_MAP[tags[0]];
   
-  const colors = tags.map(t => TAG_COLOR_MAP[t]);
+  const colors = tags.map(t => TAG_COLOR_MAP[t] || 'var(--color-bg-card)');
   return `linear-gradient(135deg, ${colors.join(', ')})`;
+};
+
+const oldColorToTag = (color: string): RirTag => {
+  switch(color) {
+    case 'warmup': return 'warmup';
+    case 'approx': return 'approx';
+    case 'green': return 'rir_2_3';
+    case 'red0': case 'red': return 'till_failure';
+    case 'redNeg': return 'failure';
+    case 'cheating': return 'cheating';
+    default: return 'approx';
+  }
 };
 
 export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFormProps) => {
@@ -100,7 +112,15 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
   }, [currentUser, initialData]);
 
   const [rows, setRows] = useState<ExerciseRow[]>(() => {
-    if (initialData?.exercises) return initialData.exercises;
+    if (initialData?.exercises) {
+        return initialData.exercises.map((row: any) => ({
+            ...row,
+            sets: row.sets.map((s: any) => ({
+                ...s,
+                tags: s.tags || (s.rirColor ? [oldColorToTag(s.rirColor)] : [])
+            }))
+        }));
+    }
     const initialRows: ExerciseRow[] = [];
     for (let i = 0; i < 5; i++) {
         initialRows.push({
@@ -527,7 +547,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                           </button>
                         </div>
                         <div className="exercise-sets-row">
-                          {child.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateChildSet(row.id, child.id, setId, field, value), (setId) => removeSetFromChild(row.id, child.id, setId)))}
+                          {child.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateChildSet(row.id, child.id, setId, field as any, value), (setId) => removeSetFromChild(row.id, child.id, setId)))}
                           <button className="add-set-mini" onClick={() => addSetToChild(row.id, child.id)} title="Add Set">+</button>
                         </div>
                         <div className="exercise-note-row" style={{ opacity: child.notes ? 1 : 0.5, paddingLeft: 0 }}>
