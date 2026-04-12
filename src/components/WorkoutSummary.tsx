@@ -9,7 +9,8 @@ interface SetDetails {
   id: string;
   weight: string; 
   reps: string;
-  rirColor: string;
+  tags?: string[]; // New structure
+  rirColor?: string; // Legacy
 }
 
 interface ExerciseRow {
@@ -44,10 +45,10 @@ const getRirLabel = (rir: string) => {
     switch(rir) {
         case 'warmup': return 'W';
         case 'approx': return '≈';
-        case 'green': return '@';
+        case 'till_failure': case 'green': return '@';
+        case 'failure': case 'redNeg': return '&&';
+        case 'cheating': return 'CHT';
         case 'red0': return '&';
-        case 'redNeg': return '&&';
-        case 'cheating': return 'C';
         case 'red': return '!';
         default: return '';
     }
@@ -57,11 +58,10 @@ const getRirColor = (rir: string) => {
     switch(rir) {
         case 'warmup': return 'rgba(59, 130, 246, 0.15)';
         case 'approx': return 'rgba(148, 163, 184, 0.2)';
-        case 'green': return 'rgba(16, 185, 129, 0.2)';
-        case 'red0': return 'rgba(239, 68, 68, 0.2)';
-        case 'redNeg': return 'rgba(168, 85, 247, 0.2)';
+        case 'till_failure': case 'green': return 'rgba(16, 185, 129, 0.2)';
+        case 'failure': case 'redNeg': return 'rgba(168, 85, 247, 0.2)';
         case 'cheating': return 'rgba(245, 158, 11, 0.2)';
-        case 'red': return 'rgba(239, 68, 68, 0.2)';
+        case 'red0': case 'red': return 'rgba(239, 68, 68, 0.2)';
         default: return 'var(--color-bg-input)';
     }
 };
@@ -70,11 +70,10 @@ const getRirBorderColor = (rir: string) => {
     switch(rir) {
         case 'warmup': return '#3b82f6';
         case 'approx': return '#94a3b8';
-        case 'green': return 'var(--color-success)';
-        case 'red0': return 'var(--color-danger)';
-        case 'redNeg': return '#a855f7';
+        case 'till_failure': case 'green': return 'var(--color-success)';
+        case 'failure': case 'redNeg': return '#a855f7';
         case 'cheating': return '#f59e0b';
-        case 'red': return 'var(--color-danger)';
+        case 'red0': case 'red': return 'var(--color-danger)';
         default: return 'var(--color-border)';
     }
 };
@@ -117,20 +116,34 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
                 </span>
               )}
               <div style={{ display: 'flex', gap: '0.35rem' }}>
-                {group.reps.map((rep, rIdx) => (
-                  <div key={rIdx} style={{ 
-                    minWidth: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
-                    backgroundColor: getRirColor(group.rirs[rIdx]), border: `1px solid ${getRirBorderColor(group.rirs[rIdx])}`, 
-                    borderRadius: '6px', position: 'relative', padding: '0 4px' 
-                  }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{rep}</span>
-                    {group.rirs[rIdx] !== 'white' && (
-                      <span style={{ fontSize: '0.55rem', position: 'absolute', top: '-6px', right: '-6px', backgroundColor: getRirBorderColor(group.rirs[rIdx]), color: 'white', padding: '1px 3px', borderRadius: '8px', fontWeight: 900, zIndex: 1 }}>
-                        {getRirLabel(group.rirs[rIdx])}
-                      </span>
-                    )}
-                  </div>
-                ))}
+                {group.reps.map((rep, rIdx) => {
+                  const setRirData = sets.find(s => s.reps === rep && (s.tags || [s.rirColor]).join(',') === group.rirs[rIdx]);
+                  const rirTags = setRirData?.tags || (setRirData?.rirColor ? [setRirData.rirColor] : []);
+                  const mainTag = rirTags[0] || 'white';
+
+                  return (
+                    <div key={rIdx} style={{ 
+                      minWidth: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                      backgroundColor: getRirColor(mainTag), border: `1px solid ${getRirBorderColor(mainTag)}`, 
+                      borderRadius: '6px', position: 'relative', padding: '0 4px',
+                      boxShadow: rirTags.length > 1 ? '0 0 0 2px var(--color-bg-card), 2px 2px 0 2px var(--color-primary)' : 'none'
+                    }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{rep}</span>
+                      {rirTags.map((tag, tIdx) => (
+                        tag !== 'white' && (
+                          <span key={tIdx} style={{ 
+                            fontSize: '0.5rem', position: 'absolute', 
+                            top: `${-6 - tIdx * 4}px`, right: `${-6 + tIdx * 4}px`, 
+                            backgroundColor: getRirBorderColor(tag), color: 'white', 
+                            padding: '0px 2px', borderRadius: '4px', fontWeight: 900, zIndex: 10 - tIdx 
+                          }}>
+                            {getRirLabel(tag)}
+                          </span>
+                        )
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           ))}

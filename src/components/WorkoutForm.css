@@ -182,9 +182,11 @@
 /* Sets flow: wrapping row of compact set boxes */
 .exercise-sets-row {
   display: flex;
-  gap: 0.5rem;
+  gap: 1rem;
   align-items: flex-start;
   flex-wrap: wrap;
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
 /* Each set box: snug around content */
@@ -192,21 +194,28 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  gap: 0.25rem;
   border: 1px solid var(--color-border);
-  padding: 0.25rem 0.5rem;
-  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--radius-md);
   background-color: var(--color-bg-card);
-  width: fit-content;
+  min-width: 300px;
+  flex: 1 1 300px;
   position: relative;
+  transition: all 0.2s;
+}
+.set-box:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 .set-label {
-  font-size: 0.65rem;
-  color: var(--color-text-tertiary);
-  font-weight: 700;
+  font-size: 0.75rem;
+  color: var(--color-text-secondary);
+  font-weight: 800;
   align-self: flex-start;
-  margin-bottom: 0.15rem;
+  margin-bottom: 0.25rem;
+  opacity: 0.8;
 }
 
 .set-inputs {
@@ -217,14 +226,15 @@
 
 /* Weight and reps inputs: size to content */
 .weight-input, .reps-input {
-  width: 50px;
+  width: 60px;
   text-align: center;
-  padding: 0.15rem 0.2rem;
-  font-size: 1rem;
-  font-weight: 600;
-  background: transparent;
+  padding: 0.25rem 0.4rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--color-bg-input);
   border: 1px solid transparent;
   border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
 }
 .weight-input:focus, .reps-input:focus {
   border-color: var(--color-primary);
@@ -234,18 +244,55 @@
 .set-divider {
   color: var(--color-text-tertiary);
   font-weight: bold;
+  font-size: 1.5rem;
 }
 
-.rir-select {
+.set-tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  width: 100%;
+  margin-top: 0.75rem;
+  justify-content: center;
+}
+
+.tag-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+  transition: all 0.2s;
+  cursor: pointer;
+  flex: 1;
+  min-width: 60px;
+  white-space: nowrap;
+}
+
+.tag-btn:hover {
+  border-color: var(--color-primary);
+  background-color: var(--color-bg-card);
+}
+
+.tag-btn.active {
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.tag-warmup.active { background-color: #3b82f6; }
+.tag-approx.active { background-color: #94a3b8; }
+.tag-till-failure.active { background-color: #10b881; }
+.tag-failure.active { background-color: #ef4444; }
+.tag-cheating.active { background-color: #f59e0b; }
+
+.del-set {
   background: transparent;
   border: none;
-  font-size: 0.7rem;
-  color: inherit;
-  outline: none;
-  cursor: pointer;
-  margin-top: 0.15rem;
-  width: 100%;
-  text-align: center;
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 /* RIR colors */
@@ -320,6 +367,10 @@
 .swap-btn:hover:not(:disabled) { border-color: var(--color-primary); color: var(--color-primary); background: rgba(99, 102, 241, 0.1); }
 .drop-btn:hover:not(:disabled) { border-color: var(--color-danger); color: var(--color-danger); background: rgba(239, 68, 68, 0.1); }
 .drop-btn.drop-active { border-color: var(--color-danger); color: white; background: var(--color-danger); }
+
+.add-set-mini, .action-btn-mini, .drop-marker {
+  margin-top: 0.5rem !important;
+}
 
 /* Drop marker */
 .drop-marker {

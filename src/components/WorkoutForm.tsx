@@ -15,13 +15,13 @@ const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps'
 const DEFAULT_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
-type RirColor = 'white' | 'warmup' | 'approx' | 'green' | 'red0' | 'redNeg' | 'cheating' | 'red';
+type RirTag = 'warmup' | 'approx' | 'till_failure' | 'failure' | 'cheating';
 
 interface SetDetails {
   id: string;
   weight: string; 
   reps: string;
-  rirColor: RirColor;
+  tags: RirTag[];
 }
 
 interface ExerciseRow {
@@ -42,9 +42,9 @@ interface WorkoutFormProps {
 }
 
 const makeEmptySets = (prefix: string): SetDetails[] => [
-  { id: `${prefix}-1`, weight: '', reps: '', rirColor: 'white' as RirColor },
-  { id: `${prefix}-2`, weight: '', reps: '', rirColor: 'white' as RirColor },
-  { id: `${prefix}-3`, weight: '', reps: '', rirColor: 'white' as RirColor }
+  { id: `${prefix}-1`, weight: '', reps: '', tags: [] },
+  { id: `${prefix}-2`, weight: '', reps: '', tags: [] },
+  { id: `${prefix}-3`, weight: '', reps: '', tags: [] }
 ];
 
 export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFormProps) => {
@@ -77,7 +77,6 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
         if (profile.workoutNames) setUserWorkoutNames(profile.workoutNames);
         if (profile.supplements) setUserSupplements(profile.supplements);
         if (profile.exerciseNames) setUserExercises(profile.exerciseNames);
-        if (profile.weight && !bodyWeight && !initialData) setBodyWeight(profile.weight);
       }
     };
     fetchUserLists();
@@ -176,7 +175,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     }));
   };
 
-  const updateChildSet = (parentId: string, childId: string, setId: string, field: string, value: string) => {
+  const updateChildSet = (parentId: string, childId: string, setId: string, field: 'weight' | 'reps' | 'tags', value: any) => {
     let finalValue = value;
     if (field === 'weight') finalValue = validateWeight(value);
     setRows(rows.map(r => {
@@ -185,7 +184,17 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
           ...r,
           children: r.children.map(c => {
             if (c.id === childId) {
-              return { ...c, sets: c.sets.map(s => s.id === setId ? { ...s, [field]: finalValue } : s) };
+              return { ...c, sets: c.sets.map(s => {
+                if (s.id === setId) {
+                  if (field === 'tags') {
+                    const tag = value as RirTag;
+                    const tags = s.tags.includes(tag) ? s.tags.filter(t => t !== tag) : [...s.tags, tag];
+                    return { ...s, tags };
+                  }
+                  return { ...s, [field]: finalValue };
+                }
+                return s;
+              }) };
             }
             return c;
           })
@@ -203,7 +212,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
           children: r.children.map(c => {
             if (c.id === childId) {
               const lastSet = c.sets[c.sets.length - 1];
-              return { ...c, sets: [...c.sets, { id: Date.now().toString(), weight: lastSet?.weight || '', reps: lastSet?.reps || '', rirColor: lastSet?.rirColor || 'white' as RirColor }] };
+              return { ...c, sets: [...c.sets, { id: Date.now().toString(), weight: lastSet?.weight || '', reps: lastSet?.reps || '', tags: lastSet?.tags || [] }] };
             }
             return c;
           })
@@ -235,12 +244,22 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
       return val.replace(/[^0-9.,]/g, '');
   };
 
-  const updateSet = (rowId: string, setId: string, field: 'weight' | 'reps' | 'rirColor', value: string) => {
+  const updateSet = (rowId: string, setId: string, field: 'weight' | 'reps' | 'tags', value: any) => {
     let finalValue = value;
     if (field === 'weight') finalValue = validateWeight(value);
     setRows(rows.map(r => {
       if (r.id === rowId) {
-        return { ...r, sets: r.sets.map(s => s.id === setId ? { ...s, [field]: finalValue } : s) };
+        return { ...r, sets: r.sets.map(s => {
+          if (s.id === setId) {
+            if (field === 'tags') {
+              const tag = value as RirTag;
+              const tags = s.tags.includes(tag) ? s.tags.filter(t => t !== tag) : [...s.tags, tag];
+              return { ...s, tags };
+            }
+            return { ...s, [field]: finalValue };
+          }
+          return s;
+        }) };
       }
       return r;
     }));
@@ -250,7 +269,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     setRows(rows.map(r => {
       if (r.id === rowId) {
         const lastSet = r.sets[r.sets.length - 1];
-        return { ...r, sets: [...r.sets, { id: Date.now().toString(), weight: lastSet ? lastSet.weight : '', reps: lastSet ? lastSet.reps : '', rirColor: lastSet ? lastSet.rirColor : 'white' as RirColor }] };
+        return { ...r, sets: [...r.sets, { id: Date.now().toString(), weight: lastSet ? lastSet.weight : '', reps: lastSet ? lastSet.reps : '', tags: lastSet ? lastSet.tags : [] }] };
       }
       return r;
     }));
@@ -300,32 +319,35 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
      }
   };
 
-  // Render RIR options (shared between main and child rows)
-  const renderRirOptions = () => (
-    <>
-      <option value="white">⚪️ RIR</option>
-      <option value="warmup">🔵 W ({t('warmup', 'Warmup')})</option>
-      <option value="approx">🔘 ≈ ({t('approx', 'Approx')})</option>
-      <option value="green">🟢 @ 2-3</option>
-      <option value="red0">🔴 & ({t('fail', 'Fail')})</option>
-      <option value="redNeg">🟣 && ({t('beyond', 'Beyond')})</option>
-      <option value="cheating">🟠 CHT ({t('cheat', 'Cheat')})</option>
-    </>
-  );
-
   // Render a set box (shared)
-  const renderSetBox = (set: SetDetails, sIdx: number, onUpdate: (setId: string, field: string, value: string) => void, onRemove: (setId: string) => void) => (
-    <div key={set.id} className={`set-box rir-${set.rirColor}`}>
-      <span className="set-label">S{sIdx+1}</span>
+  const renderSetBox = (set: SetDetails, sIdx: number, onUpdate: (setId: string, field: any, value: any) => void, onRemove: (setId: string) => void) => (
+    <div key={set.id} className="set-box">
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: '0.25rem' }}>
+        <span className="set-label">S{sIdx+1}</span>
+        <button className="del-set" onClick={() => onRemove(set.id)}>&times;</button>
+      </div>
       <div className="set-inputs">
         <input type="text" className="weight-input" placeholder={unit} value={set.weight} onChange={(e) => onUpdate(set.id, 'weight', e.target.value)} />
         <span className="set-divider">×</span>
         <input type="text" className="reps-input" placeholder="rps" value={set.reps} onChange={(e) => onUpdate(set.id, 'reps', e.target.value)} />
       </div>
-      <select className="rir-select" value={set.rirColor} onChange={(e) => onUpdate(set.id, 'rirColor', e.target.value)} style={{ fontWeight: set.rirColor !== 'white' ? 800 : 400 }}>
-        {renderRirOptions()}
-      </select>
-      <button className="del-set" onClick={() => onRemove(set.id)}>&times;</button>
+      <div className="set-tags-grid">
+         {[
+           { id: 'warmup', label: 'W', color: 'warmup' },
+           { id: 'approx', label: '≈', color: 'approx' },
+           { id: 'till_failure', label: 'До отказа', color: 'till-failure' },
+           { id: 'failure', label: '&&', color: 'failure' },
+           { id: 'cheating', label: 'CHT', color: 'cheating' }
+         ].map(tag => (
+           <button 
+             key={tag.id}
+             className={`tag-btn tag-${tag.color} ${set.tags.includes(tag.id as RirTag) ? 'active' : ''}`}
+             onClick={() => onUpdate(set.id, 'tags', tag.id)}
+           >
+             {tag.label}
+           </button>
+         ))}
+      </div>
     </div>
   );
 
