@@ -87,20 +87,23 @@
 }
 
 .calendar-cell.completed {
-  border: 1px solid var(--color-streak-daily);
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
 }
 
-/* Colors by type */
-.calendar-cell.completed.type-cardio { border-color: #f43f5e; color: #f43f5e; }
-.calendar-cell.completed.type-full { border-color: #8b5cf6; color: #8b5cf6; }
-.calendar-cell.completed.type-arms { border-color: #eab308; color: #eab308; }
-.calendar-cell.completed.type-legs { border-color: #22c55e; color: #22c55e; }
-.calendar-cell.completed.type-back { border-color: #0ea5e9; color: #0ea5e9; }
-.calendar-cell.completed.type-chest { border-color: #f97316; color: #f97316; }
-.calendar-cell.completed.type-other { border-color: var(--color-streak-daily); color: var(--color-streak-daily); }
+.calendar-cell.completed .number {
+  color: white;
+}
+
+.calendar-cell.today.completed {
+  background-color: var(--color-primary);
+  box-shadow: 0 0 0 2px var(--color-bg-card), 0 0 0 4px var(--color-primary);
+}
 
 .calendar-cell.selected.completed {
-  color: white; /* preserve white text on selected */
+  background-color: var(--color-primary);
+  filter: brightness(0.9);
 }
 
 .fire-indicator {

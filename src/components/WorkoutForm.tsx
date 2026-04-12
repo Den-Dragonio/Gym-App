@@ -63,7 +63,10 @@ const getSetBoxBackground = (tags: RirTag[]) => {
   if (tags.length === 1) return TAG_COLOR_MAP[tags[0]];
   
   const colors = tags.map(t => TAG_COLOR_MAP[t] || 'var(--color-bg-card)');
-  return `linear-gradient(135deg, ${colors.join(', ')})`;
+  const step = 100 / colors.length;
+  // Use hard stops for each color share
+  const gradientParts = colors.map((color, i) => `${color} ${i * step}% ${(i + 1) * step}%`);
+  return `linear-gradient(135deg, ${gradientParts.join(', ')})`;
 };
 
 const oldColorToTag = (color: string): RirTag => {

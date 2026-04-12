@@ -14,7 +14,7 @@ import {
   getYear
 } from 'date-fns';
 import { enUS, ru, uk } from 'date-fns/locale';
-import { ChevronLeft, ChevronRight, Activity, Zap, Shield, Dumbbell } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Dumbbell, Heart } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 import './CalendarWidget.css';
 
@@ -98,14 +98,12 @@ export const CalendarWidget: React.FC<CalendarWidgetProps> = ({ onDateSelect, co
         let typeIcon = null;
         let typeClass = '';
         if (completedRecord) {
-           switch (completedRecord.type) {
-             case 'Cardio': typeIcon = <Activity size={12}/>; typeClass = 'type-cardio'; break;
-             case 'Full Body': typeIcon = <Zap size={12}/>; typeClass = 'type-full'; break;
-             case 'Arms': typeIcon = <Dumbbell size={12}/>; typeClass = 'type-arms'; break;
-             case 'Legs': typeIcon = <Shield size={12}/>; typeClass = 'type-legs'; break;
-             case 'Back': typeIcon = <Shield size={12}/>; typeClass = 'type-back'; break;
-             case 'Chest': typeIcon = <Shield size={12}/>; typeClass = 'type-chest'; break;
-             default: typeIcon = '🔥'; typeClass = 'type-other'; break;
+           if (completedRecord.type === 'Cardio') {
+             typeIcon = <Heart size={14} />;
+             typeClass = 'type-cardio';
+           } else {
+             typeIcon = <Dumbbell size={14} />;
+             typeClass = 'type-strength';
            }
         }
 
