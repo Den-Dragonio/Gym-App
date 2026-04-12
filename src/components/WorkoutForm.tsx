@@ -15,14 +15,14 @@ const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps'
 const DEFAULT_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
-type RirTag = 'warmup' | 'approx' | 'rir_2_3' | 'till_failure' | 'failure' | 'cheating';
-
 interface SetDetails {
   id: string;
   weight: string; 
   reps: string;
   tags: RirTag[];
 }
+
+type SetField = 'weight' | 'reps' | 'tags';
 
 interface ExerciseRow {
   id: string;
@@ -212,7 +212,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
     }));
   };
 
-  const updateChildSet = (parentId: string, childId: string, setId: string, field: 'weight' | 'reps' | 'tags', value: any) => {
+  const updateChildSet = (parentId: string, childId: string, setId: string, field: SetField, value: any) => {
     let finalValue = value;
     if (field === 'weight') finalValue = validateWeight(value);
     setRows(rows.map(r => {
@@ -281,7 +281,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
       return val.replace(/[^0-9.,]/g, '');
   };
 
-  const updateSet = (rowId: string, setId: string, field: 'weight' | 'reps' | 'tags', value: any) => {
+  const updateSet = (rowId: string, setId: string, field: SetField, value: any) => {
     let finalValue = value;
     if (field === 'weight') finalValue = validateWeight(value);
     setRows(rows.map(r => {
@@ -357,7 +357,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
   };
 
   // Render a set box (shared)
-  const renderSetBox = (set: SetDetails, sIdx: number, onUpdate: (setId: string, field: any, value: any) => void, onRemove: (setId: string) => void) => (
+  const renderSetBox = (set: SetDetails, sIdx: number, onUpdate: (setId: string, field: SetField, value: any) => void, onRemove: (setId: string) => void) => (
     <div key={set.id} className="set-box" style={{ background: getSetBoxBackground(set.tags) }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: '0.25rem' }}>
         <span className="set-label">S{sIdx+1}</span>
@@ -513,7 +513,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
                   {/* Row 2: Sets + action buttons */}
                   <div className="exercise-sets-row" style={{ paddingLeft: '2rem' }}>
-                    {row.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateSet(row.id, setId, field as any, value), (setId) => removeSetFromRow(row.id, setId)))}
+                    {row.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateSet(row.id, setId, field, value), (setId) => removeSetFromRow(row.id, setId)))}
                     
                     {/* Drop marker after last set */}
                     {row.dropped && <span className="drop-marker" title={t('dropped', 'Dropped')}>✕</span>}
@@ -547,7 +547,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                           </button>
                         </div>
                         <div className="exercise-sets-row">
-                          {child.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateChildSet(row.id, child.id, setId, field as any, value), (setId) => removeSetFromChild(row.id, child.id, setId)))}
+                          {child.sets.map((set, sIdx) => renderSetBox(set, sIdx, (setId, field, value) => updateChildSet(row.id, child.id, setId, field, value), (setId) => removeSetFromChild(row.id, child.id, setId)))}
                           <button className="add-set-mini" onClick={() => addSetToChild(row.id, child.id)} title="Add Set">+</button>
                         </div>
                         <div className="exercise-note-row" style={{ opacity: child.notes ? 1 : 0.5, paddingLeft: 0 }}>

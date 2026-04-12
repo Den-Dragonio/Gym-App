@@ -46,10 +46,9 @@ const getRirLabel = (rir: string) => {
         case 'warmup': return 'W';
         case 'approx': return '~';
         case 'rir_2_3': case 'green': return '@';
-        case 'till_failure': return '&';
+        case 'till_failure': case 'red0': return '&';
         case 'failure': case 'redNeg': return '&&';
         case 'cheating': return 'ch';
-        case 'red0': return 'X';
         case 'red': return '!';
         default: return '';
     }
@@ -71,10 +70,11 @@ const getRirBorderColor = (rir: string) => {
     switch(rir) {
         case 'warmup': return '#3b82f6';
         case 'approx': return '#94a3b8';
-        case 'till_failure': case 'green': return 'var(--color-success)';
-        case 'failure': case 'redNeg': return '#a855f7';
-        case 'cheating': return '#f59e0b';
-        case 'red0': case 'red': return 'var(--color-danger)';
+        case 'rir_2_3': case 'green': return '#22c55e';
+        case 'till_failure': case 'red0': return '#eab308';
+        case 'failure': case 'redNeg': return '#ef4444';
+        case 'cheating': return '#a855f7';
+        case 'red': return '#ef4444';
         default: return 'var(--color-border)';
     }
 };
