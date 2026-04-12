@@ -227,8 +227,8 @@
 }
 
 /* Weight and reps inputs: size to content */
-.weight-input, .reps-input {
-  width: 60px;
+.weight-input {
+  width: 70px;
   text-align: center;
   padding: 0.25rem 0.4rem;
   font-size: 1.25rem;
@@ -238,6 +238,19 @@
   border-radius: var(--radius-sm);
   color: var(--color-text-primary);
 }
+
+.reps-input {
+  width: 125px;
+  text-align: center;
+  padding: 0.25rem 0.4rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  background: var(--color-bg-input);
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--color-text-primary);
+}
+
 .weight-input:focus, .reps-input:focus {
   border-color: var(--color-primary);
   background-color: var(--color-bg-input);
@@ -251,17 +264,13 @@
 
 .set-tags-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.35rem;
   width: 100%;
   margin-top: 0.5rem;
 }
 
-/* Make CHT span full width if it's the 5th element */
-.tag-btn:nth-child(5) {
-  grid-column: span 2;
-}
-
+/* Remove previous nth-child(5) spanning since we are using 3 columns now */
 .tag-btn {
   padding: 0.35rem 0.5rem;
   font-size: 0.75rem;
@@ -299,9 +308,10 @@
 
 .tag-warmup.active { background-color: #3b82f6; }
 .tag-approx.active { background-color: #94a3b8; }
-.tag-till-failure.active { background-color: #10b881; }
+.tag-rir-2-3.active { background-color: #22c55e; }
+.tag-till-failure.active { background-color: #eab308; }
 .tag-failure.active { background-color: #ef4444; }
-.tag-cheating.active { background-color: #f59e0b; }
+.tag-cheating.active { background-color: #a855f7; }
 
 .del-set {
   background: transparent;

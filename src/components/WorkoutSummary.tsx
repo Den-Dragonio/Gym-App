@@ -44,11 +44,12 @@ interface WorkoutSummaryProps {
 const getRirLabel = (rir: string) => {
     switch(rir) {
         case 'warmup': return 'W';
-        case 'approx': return '≈';
-        case 'till_failure': case 'green': return '@';
+        case 'approx': return '~';
+        case 'rir_2_3': case 'green': return '@';
+        case 'till_failure': return '&';
         case 'failure': case 'redNeg': return '&&';
-        case 'cheating': return 'CHT';
-        case 'red0': return '&';
+        case 'cheating': return 'ch';
+        case 'red0': return 'X';
         case 'red': return '!';
         default: return '';
     }
@@ -56,12 +57,12 @@ const getRirLabel = (rir: string) => {
 
 const getRirColor = (rir: string) => {
     switch(rir) {
-        case 'warmup': return 'rgba(59, 130, 246, 0.15)';
-        case 'approx': return 'rgba(148, 163, 184, 0.2)';
-        case 'till_failure': case 'green': return 'rgba(16, 185, 129, 0.2)';
-        case 'failure': case 'redNeg': return 'rgba(168, 85, 247, 0.2)';
-        case 'cheating': return 'rgba(245, 158, 11, 0.2)';
-        case 'red0': case 'red': return 'rgba(239, 68, 68, 0.2)';
+        case 'warmup': return 'rgba(59, 130, 246, 0.4)';
+        case 'approx': return 'rgba(148, 163, 184, 0.4)';
+        case 'rir_2_3': case 'green': return 'rgba(34, 197, 94, 0.4)';
+        case 'till_failure': return 'rgba(234, 179, 8, 0.4)';
+        case 'failure': case 'redNeg': return 'rgba(239, 68, 68, 0.4)';
+        case 'cheating': return 'rgba(168, 85, 247, 0.4)';
         default: return 'var(--color-bg-input)';
     }
 };

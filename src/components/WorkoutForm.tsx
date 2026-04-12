@@ -15,7 +15,7 @@ const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps'
 const DEFAULT_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
-type RirTag = 'warmup' | 'approx' | 'till_failure' | 'failure' | 'cheating';
+type RirTag = 'warmup' | 'approx' | 'rir_2_3' | 'till_failure' | 'failure' | 'cheating';
 
 interface SetDetails {
   id: string;
@@ -46,6 +46,23 @@ const makeEmptySets = (prefix: string): SetDetails[] => [
   { id: `${prefix}-2`, weight: '', reps: '', tags: [] },
   { id: `${prefix}-3`, weight: '', reps: '', tags: [] }
 ];
+
+const TAG_COLOR_MAP: Record<string, string> = {
+  warmup: 'rgba(59, 130, 246, 0.4)',      // Blue
+  approx: 'rgba(148, 163, 184, 0.4)',      // Gray/Slate
+  rir_2_3: 'rgba(34, 197, 94, 0.4)',      // Green
+  till_failure: 'rgba(234, 179, 8, 0.4)',  // Yellow/Orange (&)
+  failure: 'rgba(239, 68, 68, 0.4)',       // Red (&&)
+  cheating: 'rgba(168, 85, 247, 0.4)'      // Purple (ch)
+};
+
+const getSetBoxBackground = (tags: RirTag[]) => {
+  if (tags.length === 0) return 'var(--color-bg-card)';
+  if (tags.length === 1) return TAG_COLOR_MAP[tags[0]];
+  
+  const colors = tags.map(t => TAG_COLOR_MAP[t]);
+  return `linear-gradient(135deg, ${colors.join(', ')})`;
+};
 
 export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFormProps) => {
   const { t, i18n } = useTranslation();
@@ -321,7 +338,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
 
   // Render a set box (shared)
   const renderSetBox = (set: SetDetails, sIdx: number, onUpdate: (setId: string, field: any, value: any) => void, onRemove: (setId: string) => void) => (
-    <div key={set.id} className="set-box">
+    <div key={set.id} className="set-box" style={{ background: getSetBoxBackground(set.tags) }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: '0.25rem' }}>
         <span className="set-label">S{sIdx+1}</span>
         <button className="del-set" onClick={() => onRemove(set.id)}>&times;</button>
@@ -333,15 +350,17 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
       </div>
       <div className="set-tags-grid">
          {[
-           { id: 'warmup', label: 'W', color: 'warmup' },
-           { id: 'approx', label: '≈', color: 'approx' },
-           { id: 'till_failure', label: 'До отказа', color: 'till-failure' },
-           { id: 'failure', label: '&&', color: 'failure' },
-           { id: 'cheating', label: 'CHT', color: 'cheating' }
+           { id: 'warmup', label: 'W', color: 'warmup', title: 'Warmup / Разминка' },
+           { id: 'approx', label: '~', color: 'approx', title: 'Approx / Примерно' },
+           { id: 'rir_2_3', label: '@', color: 'rir-2-3', title: 'RIR 2-3' },
+           { id: 'till_failure', label: '&', color: 'till-failure', title: 'Until Failure / До отказа' },
+           { id: 'failure', label: '&&', color: 'failure', title: 'Beyond Failure / Отказ' },
+           { id: 'cheating', label: 'ch', color: 'cheating', title: 'Cheat / Читинг' }
          ].map(tag => (
            <button 
              key={tag.id}
-             className={`tag-btn tag-${tag.color} ${tag.id === 'till_failure' ? 'tag-long' : ''} ${set.tags.includes(tag.id as RirTag) ? 'active' : ''}`}
+             title={tag.title}
+             className={`tag-btn tag-${tag.color} ${set.tags.includes(tag.id as RirTag) ? 'active' : ''}`}
              onClick={() => onUpdate(set.id, 'tags', tag.id)}
            >
              {tag.label}
@@ -441,15 +460,13 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
                 <div key={row.id} className={`exercise-card ${row.dropped ? 'exercise-dropped' : ''}`}>
                   {/* Row 1: Circuit + Exercise Name + Delete */}
                   <div className="exercise-card-header" style={{ position: 'relative' }}>
-                    {index > 0 ? (
-                      <button 
-                         className={`circuit-btn ${row.isCircuit ? 'active' : ''}`} 
-                         onClick={() => updateRow(row.id, 'isCircuit', !row.isCircuit)}
-                         title="Super-Set"
-                      >
-                        {row.isCircuit ? <Link size={16} /> : <Unlink size={16} color="var(--color-text-tertiary)" />}
-                      </button>
-                    ) : <div style={{ width: 24 }} />}
+                    <button 
+                       className={`circuit-btn ${row.isCircuit ? 'active' : ''}`} 
+                       onClick={() => updateRow(row.id, 'isCircuit', !row.isCircuit)}
+                       title="Super-Set"
+                    >
+                      {row.isCircuit ? <Link size={16} /> : <Unlink size={16} color="var(--color-text-tertiary)" />}
+                    </button>
 
                     <input 
                       type="text" 
