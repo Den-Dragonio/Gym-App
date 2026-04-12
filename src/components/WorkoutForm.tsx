@@ -341,7 +341,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
          ].map(tag => (
            <button 
              key={tag.id}
-             className={`tag-btn tag-${tag.color} ${set.tags.includes(tag.id as RirTag) ? 'active' : ''}`}
+             className={`tag-btn tag-${tag.color} ${tag.id === 'till_failure' ? 'tag-long' : ''} ${set.tags.includes(tag.id as RirTag) ? 'active' : ''}`}
              onClick={() => onUpdate(set.id, 'tags', tag.id)}
            >
              {tag.label}
