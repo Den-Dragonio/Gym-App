@@ -89,18 +89,17 @@ export const WorkoutSummary = ({ workout, onClose, onEdit, onDelete }: WorkoutSu
       
       sets.forEach(set => {
           const currentWeight = set.weight.trim();
+          const rirState = (set.tags || (set.rirColor ? [set.rirColor] : [])).join(',');
           
-          // If weight is specified and different from previous (or first group), start new group
-          // If weight is empty, it inherits the last group's weight
           if (currentWeight !== '' && currentWeight !== lastEffectiveWeight) {
-              groups.push({ weight: currentWeight, reps: [set.reps], rirs: [set.rirColor] });
+              groups.push({ weight: currentWeight, reps: [set.reps], rirs: [rirState] });
               lastEffectiveWeight = currentWeight;
           } else {
               if (groups.length === 0) {
-                  groups.push({ weight: '', reps: [set.reps], rirs: [set.rirColor] });
+                  groups.push({ weight: '', reps: [set.reps], rirs: [rirState] });
               } else {
                   groups[groups.length - 1].reps.push(set.reps);
-                  groups[groups.length - 1].rirs.push(set.rirColor);
+                  groups[groups.length - 1].rirs.push(rirState);
               }
           }
       });
