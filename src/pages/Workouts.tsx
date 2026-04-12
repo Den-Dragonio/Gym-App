@@ -4,7 +4,7 @@ import { Plus, RotateCcw, Filter, Search, Edit2, Trash2 } from 'lucide-react';
 import { WorkoutForm } from '../components/WorkoutForm';
 import { WorkoutSummary } from '../components/WorkoutSummary';
 import { useAuth } from '../contexts/AuthContext';
-import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { deleteWorkout } from '../firebase/db';
 
@@ -29,9 +29,7 @@ export const Workouts = () => {
     if (!currentUser?.uid) return;
     const q = query(
       collection(db, 'workouts'),
-      where('userId', '==', currentUser.uid),
-      orderBy('date', 'desc'),
-      limit(20)
+      where('userId', '==', currentUser.uid)
     );
     try {
       const querySnapshot = await getDocs(q);
@@ -39,6 +37,8 @@ export const Workouts = () => {
           id: doc.id,
           ...doc.data()
       }));
+      // Sort in memory DESC (newest first)
+      fetched.sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setRawWorkouts(fetched);
     } catch (err) {
       console.error('Failed to fetch workouts:', err);
