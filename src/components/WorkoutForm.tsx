@@ -15,6 +15,8 @@ const DEFAULT_WORKOUT_NAMES = ['Split', 'Full Body', 'Cardio', 'Chest & Triceps'
 const DEFAULT_EXERCISES = ['Bench Press', 'Squat', 'Deadlift', 'Pull-up', 'Push-up', 'Bicep Curl', 'Sprint', 'Leg Press'];
 const DEFAULT_SUPPLEMENTS = ['Magnesium', 'Collagen', 'Vitamin B', 'Vitamin C', 'BCAA', 'Whey Protein', 'Arginine'];
 
+type RirTag = 'warmup' | 'approx' | 'rir_2_3' | 'till_failure' | 'failure' | 'cheating';
+
 interface SetDetails {
   id: string;
   weight: string; 
@@ -476,7 +478,7 @@ export const WorkoutForm = ({ onClose, date, initialData, onSuccess }: WorkoutFo
           </div>
 
           <div className="table-scroll-area">
-              {rows.map((row, index) => (
+              {rows.map((row) => (
                 <div key={row.id} className={`exercise-card ${row.dropped ? 'exercise-dropped' : ''}`}>
                   {/* Row 1: Circuit + Exercise Name + Delete */}
                   <div className="exercise-card-header" style={{ position: 'relative' }}>
